@@ -12,7 +12,8 @@ using ErrorCode = uint32_t;
 
 // Module domain (8 bits)
 enum class ModuleID : uint8_t {
-    SimpleCommKitBle = 0,  // Bluetooth module
+    SimpleCommKitBle = 0,         // Bluetooth module
+    SimpleCommKitSerialPort = 1,  // Serial Port module
     SimpleCommKitMaxModule = 0xFF
 };
 
@@ -50,6 +51,17 @@ namespace ErrorCodes {
     constexpr ErrorCode SimpleCommKitBleCurrentPeripheralSubIndicateError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitBle, ErrorType::SimpleCommKitError, 0, 12);
     constexpr ErrorCode SimpleCommKitBleCurrentPeripheralSubNotifyError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitBle, ErrorType::SimpleCommKitError, 0, 13);
     constexpr ErrorCode SimpleCommKitBleCurrentPeripheralUnSubScribeError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitBle, ErrorType::SimpleCommKitError, 0, 14);
+
+    // SimpleCommKitSerialPort module error codes
+    constexpr ErrorCode SimpleCommKitSerialPortSuccess = MAKE_ERROR_CODE(ModuleID::SimpleCommKitSerialPort, ErrorType::SimpleCommKitSuccess, 0, 0);
+    constexpr ErrorCode SimpleCommKitSerialPortInitError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitSerialPort, ErrorType::SimpleCommKitError, 0, 1);
+    constexpr ErrorCode SimpleCommKitSerialPortOpenError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitSerialPort, ErrorType::SimpleCommKitError, 0, 2);
+    constexpr ErrorCode SimpleCommKitSerialPortCloseError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitSerialPort, ErrorType::SimpleCommKitError, 0, 3);
+    constexpr ErrorCode SimpleCommKitSerialPortNotOpenError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitSerialPort, ErrorType::SimpleCommKitError, 0, 4);
+    constexpr ErrorCode SimpleCommKitSerialPortReadError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitSerialPort, ErrorType::SimpleCommKitError, 0, 5);
+    constexpr ErrorCode SimpleCommKitSerialPortWriteError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitSerialPort, ErrorType::SimpleCommKitError, 0, 6);
+    constexpr ErrorCode SimpleCommKitSerialPortHotPlugError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitSerialPort, ErrorType::SimpleCommKitError, 0, 7);
+    constexpr ErrorCode SimpleCommKitSerialPortFlushError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitSerialPort, ErrorType::SimpleCommKitError, 0, 8);
 }
 
 // Error code resolver (replaces the original ErrorUtil)
@@ -101,6 +113,16 @@ inline const std::unordered_map<ErrorCode, std::string> SimpleCommKitErrorMap::e
     {ErrorCodes::SimpleCommKitBleCurrentPeripheralSubIndicateError, "SimpleCommKitBle peripheral sub indicate error"},
     {ErrorCodes::SimpleCommKitBleCurrentPeripheralSubNotifyError, "SimpleCommKitBle peripheral sub notify error"},
     {ErrorCodes::SimpleCommKitBleCurrentPeripheralUnSubScribeError, "SimpleCommKitBle peripheral unsubscribe error"},
+
+    {ErrorCodes::SimpleCommKitSerialPortSuccess, "SimpleCommKitSerialPort success"},
+    {ErrorCodes::SimpleCommKitSerialPortInitError, "SimpleCommKitSerialPort init error"},
+    {ErrorCodes::SimpleCommKitSerialPortOpenError, "SimpleCommKitSerialPort open error"},
+    {ErrorCodes::SimpleCommKitSerialPortCloseError, "SimpleCommKitSerialPort close error"},
+    {ErrorCodes::SimpleCommKitSerialPortNotOpenError, "SimpleCommKitSerialPort port not open error"},
+    {ErrorCodes::SimpleCommKitSerialPortReadError, "SimpleCommKitSerialPort read error"},
+    {ErrorCodes::SimpleCommKitSerialPortWriteError, "SimpleCommKitSerialPort write error"},
+    {ErrorCodes::SimpleCommKitSerialPortHotPlugError, "SimpleCommKitSerialPort hot plug error"},
+    {ErrorCodes::SimpleCommKitSerialPortFlushError, "SimpleCommKitSerialPort flush error"},
 
 };
 

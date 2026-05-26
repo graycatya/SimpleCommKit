@@ -47,3 +47,35 @@ build/
 3rdparty/
 3rdparty-download/
 .lingma/
+
+
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C 扩展
+*.so
+
+# 分发/打包
+dist/
+build/
+*.egg-info/
+eggs/
+.eggs/
+parts/
+var/
+sdist/
+var/
+*.egg
+
+# 编辑器/IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 虚拟环境
+venv/
+env/
+ENV/

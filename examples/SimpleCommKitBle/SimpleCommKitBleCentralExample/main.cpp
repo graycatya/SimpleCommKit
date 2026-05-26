@@ -10,7 +10,7 @@
 #include "SimpleCommKitErrorMap.hpp"
 #include "SimpleCommKitTestUtils.hpp"
 
-using namespace SimpleCommKitBle;
+using namespace SimpleCommKit;
 
 void printSeparator(const std::string& title) {
     std::cout << "\n========================================" << std::endl;
@@ -210,7 +210,7 @@ int main() {
     // Characteristic Read/Write Operations
     // ============================================
     if (!services.empty()) {
-        printSeparator("Characteristic Read/Write Operations");
+        printSeparator("Characteristic Operations");
 
         // Select a service
         selection = SimpleCommKitTestUtils::getUserInputInt("Select a Service for operations", services.size() - 1);
@@ -233,106 +233,40 @@ int main() {
 
                     std::cout << "\nSelected: Service=" << service_uuid << ", Characteristic=" << char_uuid << std::endl;
 
-                    // Read operation - only if characteristic supports READ
-                    if (selected_char.can_read) {
-                        printSeparator("Characteristic Read");
-                        std::cout << "Reading characteristic value..." << std::endl;
-                        try {
-                            auto read_data = central.peripheral_Read(service_uuid, char_uuid);
-                            std::cout << "Read " << read_data.size() << " bytes: ";
-                            for (const auto& byte : read_data) {
-                                std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
-                            }
-                            std::cout << std::dec << std::endl;
-                            std::cout << "[PASS] Read operation completed" << std::endl;
-                        } catch (const std::exception& e) {
-                            std::cout << "[ERROR] Read failed: " << e.what() << std::endl;
-                        }
-                    } else {
-                        std::cout << "[INFO] Characteristic does not support READ" << std::endl;
-                    }
+                    // Show capabilities summary
+                    std::cout << "  Capabilities: ";
+                    bool first_cap = true;
+                    if (selected_char.can_read) { std::cout << "READ"; first_cap = false; }
+                    if (selected_char.can_write_request) { std::cout << (first_cap ? "" : ", ") << "WRITE-REQUEST"; first_cap = false; }
+                    if (selected_char.can_write_command) { std::cout << (first_cap ? "" : ", ") << "WRITE-COMMAND"; first_cap = false; }
+                    if (selected_char.can_notify) { std::cout << (first_cap ? "" : ", ") << "NOTIFY"; first_cap = false; }
+                    if (selected_char.can_indicate) { std::cout << (first_cap ? "" : ", ") << "INDICATE"; first_cap = false; }
+                    std::cout << std::endl;
 
-                    // Write operation - select correct method based on Capabilities
-                    if (selected_char.can_write_request && selected_char.can_write_command) {
-                        // Both supported - let user choose
-                        printSeparator("Characteristic Write");
-                        std::cout << "Characteristic supports both WRITE-REQUEST and WRITE-COMMAND" << std::endl;
-                        std::cout << "Choose write method: (1) WRITE-REQUEST (with response), (2) WRITE-COMMAND (without response): ";
-                        char write_choice;
-                        std::cin >> write_choice;
-                        std::cin.ignore();
+                    // ============================================
+                    // Step 1: Register Notifications/Indications FIRST
+                    // ============================================
+                    std::atomic<int> notification_count{0};
+                    bool subscribed = false;
 
-                        if (write_choice == '1') {
-                            std::cout << "Using Write Request (with response)..." << std::endl;
-                            std::vector<uint8_t> write_data = {0xAA, 0xBB, 0xCC, 0xDD};
-                            try {
-                                central.peripheral_Write_Request(service_uuid, char_uuid, write_data);
-                                std::cout << "[PASS] Write Request completed" << std::endl;
-                            } catch (const std::exception& e) {
-                                std::cout << "[ERROR] Write Request failed: " << e.what() << std::endl;
-                            }
-                        } else if (write_choice == '2') {
-                            std::cout << "Using Write Command (without response)..." << std::endl;
-                            std::vector<uint8_t> write_data = {0xAA, 0xBB, 0xCC, 0xDD};
-                            try {
-                                central.peripheral_Write_Command(service_uuid, char_uuid, write_data);
-                                std::cout << "[PASS] Write Command completed" << std::endl;
-                            } catch (const std::exception& e) {
-                                std::cout << "[ERROR] Write Command failed: " << e.what() << std::endl;
-                            }
-                        }
-                    } else if (selected_char.can_write_request) {
-                        // Only WRITE-REQUEST supported - use it directly
-                        printSeparator("Characteristic Write (WRITE-REQUEST)");
-                        std::cout << "Using Write Request (requires response)..." << std::endl;
-                        std::vector<uint8_t> write_data = {0xAA, 0xBB, 0xCC, 0xDD};
-                        std::cout << "Writing " << write_data.size() << " bytes: ";
-                        for (const auto& byte : write_data) {
-                            std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
-                        }
-                        std::cout << std::dec << std::endl;
-                        try {
-                            central.peripheral_Write_Request(service_uuid, char_uuid, write_data);
-                            std::cout << "[PASS] Write Request completed" << std::endl;
-                        } catch (const std::exception& e) {
-                            std::cout << "[ERROR] Write Request failed: " << e.what() << std::endl;
-                        }
-                    } else if (selected_char.can_write_command) {
-                        // Only WRITE-COMMAND supported - use it directly
-                        printSeparator("Characteristic Write (WRITE-COMMAND)");
-                        std::cout << "Using Write Command (no response)..." << std::endl;
-                        std::vector<uint8_t> write_data = {0xAA, 0xBB, 0xCC, 0xDD};
-                        std::cout << "Writing " << write_data.size() << " bytes: ";
-                        for (const auto& byte : write_data) {
-                            std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
-                        }
-                        std::cout << std::dec << std::endl;
-                        try {
-                            central.peripheral_Write_Command(service_uuid, char_uuid, write_data);
-                            std::cout << "[PASS] Write Command completed" << std::endl;
-                        } catch (const std::exception& e) {
-                            std::cout << "[ERROR] Write Command failed: " << e.what() << std::endl;
-                        }
-                    } else {
-                        std::cout << "[INFO] Characteristic does not support any WRITE operations" << std::endl;
-                    }
-
-                    // Notify/Indicate subscription
                     if (selected_char.can_notify || selected_char.can_indicate) {
                         printSeparator("Characteristic Notification/Indication");
 
                         std::cout << "Subscribe to notifications/indications? (y/n): ";
                         char subscribe_choice;
                         std::cin >> subscribe_choice;
+                        std::cin.ignore();
 
                         if (subscribe_choice == 'y' || subscribe_choice == 'Y') {
-                            std::atomic<int> notification_count{0};
-
                             if (selected_char.can_notify) {
                                 std::cout << "Subscribing to NOTIFY..." << std::endl;
                                 central.peripheral_Notify(service_uuid, char_uuid,
-                                    [&notification_count](std::string payload) {
-                                        std::cout << "[NOTIFY] Received: " << payload << std::endl;
+                                    [&notification_count](std::vector<uint8_t> payload) {
+                                        std::cout << "[NOTIFY] Received " << payload.size() << " bytes: ";
+                                        for (const auto& byte : payload) {
+                                            std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
+                                        }
+                                        std::cout << std::dec << std::endl;
                                         notification_count.fetch_add(1);
                                     });
                                 std::cout << "[PASS] Notify subscription set up" << std::endl;
@@ -341,27 +275,146 @@ int main() {
                             if (selected_char.can_indicate) {
                                 std::cout << "Subscribing to INDICATE..." << std::endl;
                                 central.peripheral_Indicate(service_uuid, char_uuid,
-                                    [&notification_count](std::string payload) {
-                                        std::cout << "[INDICATE] Received: " << payload << std::endl;
+                                    [&notification_count](std::vector<uint8_t> payload) {
+                                        std::cout << "[INDICATE] Received " << payload.size() << " bytes: ";
+                                        for (const auto& byte : payload) {
+                                            std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
+                                        }
+                                        std::cout << std::dec << std::endl;
                                         notification_count.fetch_add(1);
                                     });
                                 std::cout << "[PASS] Indicate subscription set up" << std::endl;
                             }
-
-                            std::cout << "Waiting for notifications (10 seconds)..." << std::endl;
-                            std::this_thread::sleep_for(std::chrono::seconds(10));
-
-                            std::cout << "Notifications received: " << notification_count.load() << std::endl;
-
-                            std::cout << "Unsubscribing..." << std::endl;
-                            central.peripheral_Unsubscribe(service_uuid, char_uuid);
-                            std::cout << "[PASS] Unsubscribed" << std::endl;
+                            subscribed = true;
                         }
                     } else {
                         std::cout << "[INFO] Characteristic does not support NOTIFY/INDICATE" << std::endl;
                     }
 
-                    // Descriptor operations
+                    // ============================================
+                    // Step 2: Interactive Read / Write Operations
+                    // ============================================
+                    bool running = true;
+                    while (running) {
+                        printSeparator("Read / Write Operations");
+                        std::cout << "Choose operation:" << std::endl;
+                        if (selected_char.can_read) {
+                            std::cout << "  (r) Read characteristic value" << std::endl;
+                        }
+                        if (selected_char.can_write_request || selected_char.can_write_command) {
+                            std::cout << "  (w) Write characteristic value" << std::endl;
+                        }
+                        std::cout << "  (q) Quit to next step" << std::endl;
+                        if (subscribed) {
+                            std::cout << "  Notifications received so far: " << notification_count.load() << std::endl;
+                        }
+                        std::cout << "Enter choice: ";
+                        char op_choice;
+                        std::cin >> op_choice;
+                        std::cin.ignore();
+
+                        if (op_choice == 'r' && selected_char.can_read) {
+                            // Read operation
+                            std::cout << "Reading characteristic value..." << std::endl;
+                            try {
+                                auto read_data = central.peripheral_Read(service_uuid, char_uuid);
+                                std::cout << "Read " << read_data.size() << " bytes: ";
+                                for (const auto& byte : read_data) {
+                                    std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
+                                }
+                                std::cout << std::dec << std::endl;
+                                std::cout << "[PASS] Read operation completed" << std::endl;
+                            } catch (const std::exception& e) {
+                                std::cout << "[ERROR] Read failed: " << e.what() << std::endl;
+                            }
+                        } else if (op_choice == 'w' && (selected_char.can_write_request || selected_char.can_write_command)) {
+                            // Prompt user for hex data input
+                            std::cout << "Enter hex data to write (e.g., AA BB CC DD): ";
+                            std::string hex_input;
+                            std::getline(std::cin, hex_input);
+
+                            std::vector<uint8_t> write_data;
+                            std::istringstream hex_stream(hex_input);
+                            std::string byte_str;
+                            while (hex_stream >> byte_str) {
+                                try {
+                                    uint8_t byte_val = static_cast<uint8_t>(std::stoul(byte_str, nullptr, 16));
+                                    write_data.push_back(byte_val);
+                                } catch (...) {
+                                    std::cout << "[WARN] Invalid hex byte: " << byte_str << ", skipping" << std::endl;
+                                }
+                            }
+
+                            if (write_data.empty()) {
+                                std::cout << "[WARN] No valid data entered, write skipped" << std::endl;
+                                continue;
+                            }
+
+                            // Print data being written
+                            std::cout << "Writing " << write_data.size() << " bytes: ";
+                            for (const auto& byte : write_data) {
+                                std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
+                            }
+                            std::cout << std::dec << std::endl;
+
+                            // Choose write method if both supported
+                            if (selected_char.can_write_request && selected_char.can_write_command) {
+                                std::cout << "Choose write method: (1) WRITE-REQUEST (with response), (2) WRITE-COMMAND (without response): ";
+                                char write_choice;
+                                std::cin >> write_choice;
+                                std::cin.ignore();
+
+                                if (write_choice == '1') {
+                                    try {
+                                        central.peripheral_Write_Request(service_uuid, char_uuid, write_data);
+                                        std::cout << "[PASS] Write Request completed" << std::endl;
+                                    } catch (const std::exception& e) {
+                                        std::cout << "[ERROR] Write Request failed: " << e.what() << std::endl;
+                                    }
+                                } else if (write_choice == '2') {
+                                    try {
+                                        central.peripheral_Write_Command(service_uuid, char_uuid, write_data);
+                                        std::cout << "[PASS] Write Command completed" << std::endl;
+                                    } catch (const std::exception& e) {
+                                        std::cout << "[ERROR] Write Command failed: " << e.what() << std::endl;
+                                    }
+                                } else {
+                                    std::cout << "[WARN] Invalid choice, write skipped" << std::endl;
+                                }
+                            } else if (selected_char.can_write_request) {
+                                try {
+                                    central.peripheral_Write_Request(service_uuid, char_uuid, write_data);
+                                    std::cout << "[PASS] Write Request completed" << std::endl;
+                                } catch (const std::exception& e) {
+                                    std::cout << "[ERROR] Write Request failed: " << e.what() << std::endl;
+                                }
+                            } else if (selected_char.can_write_command) {
+                                try {
+                                    central.peripheral_Write_Command(service_uuid, char_uuid, write_data);
+                                    std::cout << "[PASS] Write Command completed" << std::endl;
+                                } catch (const std::exception& e) {
+                                    std::cout << "[ERROR] Write Command failed: " << e.what() << std::endl;
+                                }
+                            }
+                        } else if (op_choice == 'q') {
+                            running = false;
+                        } else {
+                            std::cout << "[WARN] Invalid choice or operation not supported" << std::endl;
+                        }
+                    }
+
+                    // ============================================
+                    // Step 3: Unsubscribe
+                    // ============================================
+                    if (subscribed) {
+                        std::cout << "\nUnsubscribing..." << std::endl;
+                        central.peripheral_Unsubscribe(service_uuid, char_uuid);
+                        std::cout << "[PASS] Unsubscribed. Total notifications received: " << notification_count.load() << std::endl;
+                    }
+
+                    // ============================================
+                    // Step 4: Descriptor Operations
+                    // ============================================
                     if (!selected_char.descriptors_uuid.empty()) {
                         printSeparator("Descriptor Operations");
                         std::cout << "This characteristic has " << selected_char.descriptors_uuid.size()
@@ -374,29 +427,34 @@ int main() {
                             std::string desc_uuid = selected_char.descriptors_uuid[desc_selection.value()];
                             std::cout << "Selected descriptor: " << desc_uuid << std::endl;
 
-                            // Read descriptor
-                            printSeparator("Descriptor Read");
-                            // try {
-                            //     auto desc_data = central.peripheral_Read(service_uuid, char_uuid, desc_uuid);
-                            //     std::cout << "Read " << desc_data.size() << " bytes: ";
-                            //     for (const auto& byte : desc_data) {
-                            //         std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
-                            //     }
-                            //     std::cout << std::dec << std::endl;
-                            //     std::cout << "[PASS] Descriptor read completed" << std::endl;
-                            // } catch (const std::exception& e) {
-                            //     std::cout << "[ERROR] Descriptor read failed: " << e.what() << std::endl;
-                            // }
-
                             // Write descriptor
                             printSeparator("Descriptor Write");
-                            std::cout << "Writing test descriptor data..." << std::endl;
-                            std::vector<uint8_t> desc_write_data = {0x01, 0x00};
-                            try {
-                                central.peripheral_Write(service_uuid, char_uuid, desc_uuid, desc_write_data);
-                                std::cout << "[PASS] Descriptor write completed" << std::endl;
-                            } catch (const std::exception& e) {
-                                std::cout << "[ERROR] Descriptor write failed: " << e.what() << std::endl;
+                            std::cout << "Enter hex data to write to descriptor (e.g., 01 00): ";
+                            std::string desc_hex_input;
+                            std::getline(std::cin, desc_hex_input);
+
+                            std::vector<uint8_t> desc_write_data;
+                            std::istringstream desc_hex_stream(desc_hex_input);
+                            std::string desc_byte_str;
+                            while (desc_hex_stream >> desc_byte_str) {
+                                try {
+                                    uint8_t byte_val = static_cast<uint8_t>(std::stoul(desc_byte_str, nullptr, 16));
+                                    desc_write_data.push_back(byte_val);
+                                } catch (...) {
+                                    std::cout << "[WARN] Invalid hex byte: " << desc_byte_str << ", skipping" << std::endl;
+                                }
+                            }
+
+                            if (desc_write_data.empty()) {
+                                std::cout << "[WARN] No valid data entered, descriptor write skipped" << std::endl;
+                            } else {
+                                std::cout << "Writing " << desc_write_data.size() << " bytes to descriptor..." << std::endl;
+                                try {
+                                    central.peripheral_Write(service_uuid, char_uuid, desc_uuid, desc_write_data);
+                                    std::cout << "[PASS] Descriptor write completed" << std::endl;
+                                } catch (const std::exception& e) {
+                                    std::cout << "[ERROR] Descriptor write failed: " << e.what() << std::endl;
+                                }
                             }
                         }
                     }

@@ -9,7 +9,7 @@
 #include <mutex>
 #include <functional>
 
-namespace SimpleCommKitBle {
+namespace SimpleCommKit {
 
 inline bool bluetooth_Enabled()
 {
@@ -78,13 +78,13 @@ private:
     std::unique_ptr<SimpleBLE::Adapter> m_currentAdapter;
     std::unique_ptr<SimpleBLE::Peripheral> m_currentPeripheral;
 
-    std::map<std::string, SimpleCommKitBle::SimpleCommKitBlePeripheral> m_peripherals;
+    std::map<std::string, SimpleCommKitBlePeripheral> m_peripherals;
     std::function<void(SimpleCommKit::ErrorCode)> m_onError;
 
     bool m_initialized = false;
     mutable std::mutex m_mutex;
 };
 
-} // namespace SimpleCommKitBle
+} // namespace SimpleCommKit
 
 

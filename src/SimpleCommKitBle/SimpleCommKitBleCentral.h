@@ -11,7 +11,7 @@
 
 
 
-namespace SimpleCommKitBle {
+namespace SimpleCommKit {
 
 SIMPLECOMMKIT_DECLARE_PRIVATE_CLASS(SimpleCommKitBleCentral)
 struct SimpleCommKitBleAdapter {
@@ -28,7 +28,7 @@ enum SimpleCommKitBlePeripheralAddressType : int32_t {
 struct SimpleCommKitBlePeripheral {
     std::string identifier;
     std::string address;
-    SimpleCommKitBle::SimpleCommKitBlePeripheralAddressType address_type;
+    SimpleCommKitBlePeripheralAddressType address_type;
     int16_t rssi;
     std::map<uint16_t, std::vector<uint8_t>> manufacturer;
 };
@@ -101,8 +101,8 @@ public:
     std::vector<uint8_t> peripheral_Read(std::string const& service, std::string const& characteristic);
     void peripheral_Write_Request(std::string const& service, std::string const& characteristic, std::vector<uint8_t> const& data);
     void peripheral_Write_Command(std::string const& service, std::string const& characteristic, std::vector<uint8_t> const& data);
-    void peripheral_Notify(std::string const& service, std::string const& characteristic, std::function<void(std::string payload)> callback);
-    void peripheral_Indicate(std::string const& service, std::string const& characteristic, std::function<void(std::string payload)> callback);
+    void peripheral_Notify(std::string const& service, std::string const& characteristic, std::function<void(std::vector<uint8_t> payload)> callback);
+    void peripheral_Indicate(std::string const& service, std::string const& characteristic, std::function<void(std::vector<uint8_t> payload)> callback);
     void peripheral_Unsubscribe(std::string const& service, std::string const& characteristic);
 
     std::vector<uint8_t> peripheral_Read(std::string const& service, std::string const& characteristic, std::string const& descriptor);
@@ -114,4 +114,4 @@ private:
     std::unique_ptr<SimpleCommKitBleCentralPrivate> d_ptr;
 };
 
-}
+} // namespace SimpleCommKit

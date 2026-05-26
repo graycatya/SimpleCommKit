@@ -31,6 +31,8 @@ option(SIMPLECOMMKIT_BUILD_SHARED_LIBS "SimpleCommKit Build shared libraries" OF
 option(SIMPLECOMMKIT_EXAMPLES "SimpleCommKit Build all modules examples" OFF)
 option(SIMPLECOMMKITBLE_EXAMPLES "SimpleCommKitBle Examples" OFF)
 option(SIMPLECOMMKITUTIL_EXAMPLES "SimpleCommKitUtil Examples" OFF)
+option(SIMPLECOMMKITSERIALPORT_EXAMPLES "SimpleCommKitSerialPort Examples" OFF)
+option(ENABLE_SIMPLECOMMKITPYBIND "Enable SimpleCommKitPyBind" OFF)
 
 
 option(ENABLE_PROXY "Enable proxy for network requests" OFF)
@@ -90,7 +92,12 @@ set(3RDPARTY_ZIPS
     libuv
     uSockets
     mongoose
+
 )
+
+if(ENABLE_SIMPLECOMMKITPYBIND)
+    list(APPEND 3RDPARTY_ZIPS pybind11)
+endif()
 
 set(IS_CUSTOM_BUILDS_PROJECT
     uSockets
@@ -100,11 +107,19 @@ set(IS_CUSTOM_BUILDS_PROJECT
 set(SRC_MODULES
     SimpleCommKitUtil
     SimpleCommKitBle
+    SimpleCommKitSerialPort
 )
+
+if(ENABLE_SIMPLECOMMKITPYBIND)
+    list(APPEND SRC_MODULES SimpleCommKitPyBle SimpleCommKitPySerialPort)
+endif()
+
+
 
 
 set(MODULE_EXAMPLES_MAPPING
     SimpleCommKitBle:SimpleCommKitBleCentralExample
+    SimpleCommKitSerialPort:SimpleCommKitSerialPortExample
 )
 
 

@@ -3,7 +3,7 @@
 #include <algorithm>
 #include <iostream>
 
-namespace SimpleCommKitBle {
+namespace SimpleCommKit {
 
 
 SimpleCommKitBlePeripheral convertToSimpleCommKitPeripheral(SimpleBLE::Peripheral peripheral)
@@ -32,7 +32,7 @@ SimpleCommKitBleCentral::SimpleCommKitBleCentral()
 
 bool SimpleCommKitBleCentral::Bluetooth_Enabled()
 {
-    return SimpleCommKitBle::bluetooth_Enabled();
+    return bluetooth_Enabled();
 }
 
 SimpleCommKitBleCentral::~SimpleCommKitBleCentral() = default;
@@ -365,7 +365,7 @@ void SimpleCommKitBleCentral::peripheral_Set_Callback_On_Disconnected(std::funct
     if (!d_ptr) {
         return;
     }
-    d_ptr->peripheralSetCallbackOnConnected(on_disconnected);
+    d_ptr->peripheralSetCallbackOnDisconnected(on_disconnected);
 }
 
 std::vector<SimpleCommKitBleService> SimpleCommKitBleCentral::peripheral_Services()
@@ -442,7 +442,7 @@ void SimpleCommKitBleCentral::peripheral_Write_Command(const std::string &servic
     return d_ptr->getCurrentPeripheral().value()->write_command(service, characteristic, data);
 }
 
-void SimpleCommKitBleCentral::peripheral_Notify(const std::string &service, const std::string &characteristic, std::function<void (std::string)> callback)
+void SimpleCommKitBleCentral::peripheral_Notify(const std::string &service, const std::string &characteristic, std::function<void (std::vector<uint8_t>)> callback)
 {
     if (!d_ptr) {
         return;
@@ -458,7 +458,7 @@ void SimpleCommKitBleCentral::peripheral_Notify(const std::string &service, cons
     }
 }
 
-void SimpleCommKitBleCentral::peripheral_Indicate(const std::string &service, const std::string &characteristic, std::function<void (std::string)> callback)
+void SimpleCommKitBleCentral::peripheral_Indicate(const std::string &service, const std::string &characteristic, std::function<void (std::vector<uint8_t>)> callback)
 {
     if (!d_ptr) {
         return;
@@ -521,4 +521,4 @@ void SimpleCommKitBleCentral::set_Callback_Error(std::function<void(SimpleCommKi
     }
 }
 
-} // namespace SimpleCommKitBle
+} // namespace SimpleCommKit

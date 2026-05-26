@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "SimpleCommKitAiSerialPort"
+version = "0.1.0"
+description = "SimpleCommKitAiSerialPort - AI-friendly Serial Port toolkit (MCP server & REST API) powered by simple_comm_kit_serialport."
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [{ name = "SimpleCommKit Team" }]
+urls = { Homepage = "https://github.com/catgrayprj/SimpleCommKit" }
+keywords = ["serial", "serialport", "mcp", "ai", "simplecommkit"]
+classifiers = [
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+]
+dependencies = [
+    # simple_comm_kit_serialport must be built from source (SimpleCommKitPySerialPort)
+    # "simple_comm_kit_serialport",
+    "fastmcp",
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+    "httpx",
+]
+
+[project.scripts]
+simplecommkitaiserialport-mcp = "SimpleCommKitAiSerialPort.mcp:main"
+simplecommkitaiserialport-http = "SimpleCommKitAiSerialPort.http:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"

@@ -5,7 +5,8 @@ set(PROJECT_NAMES "CSerialPort"
                     "libusb-cmake"
                     "libuv"
                     "openssl-cmake"
-                    "uSockets")
+                    "uSockets"
+                    "pybind11")
 
 
 set(CSerialPort_VERSION_TAG "4.3.3")
@@ -31,6 +32,9 @@ set(openssl-cmake_URL "https://github.com/janbar/openssl-cmake/archive/refs/tags
 
 set(uSockets_VERSION_TAG "0.8.8")
 set(uSockets_URL "https://github.com/uNetworking/uSockets/archive/refs/tags/v${uSockets_VERSION_TAG}.zip")
+
+set(pybind11_VERSION_TAG "3.0.4")
+set(pybind11_URL "https://github.com/pybind/pybind11/archive/refs/tags/v${pybind11_VERSION_TAG}.zip")
 
 
 foreach(PROJ_NAME IN LISTS PROJECT_NAMES)

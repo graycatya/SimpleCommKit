@@ -4,7 +4,7 @@
 #include <iostream>
 
 
-namespace SimpleCommKitBle {
+namespace SimpleCommKit {
 
 // SimpleCommKitBleCentralPrivate Implementation
 
@@ -251,8 +251,8 @@ void SimpleCommKitBleCentralPrivate::setCurrentPeripheral(const SimpleCommKitBle
     std::vector<SimpleBLE::Peripheral> peripherals = m_currentAdapter->scan_get_results();
 
     for (auto& simple_peripheral : peripherals) {
-        if (simple_peripheral.identifier() == peripheral.identifier ||
-            simple_peripheral.address() == peripheral.address ||
+        if (simple_peripheral.identifier() == peripheral.identifier &&
+            simple_peripheral.address() == peripheral.address &&
             simple_peripheral.address_type() ==  static_cast<SimpleBLE::BluetoothAddressType>(peripheral.address_type)) {
             m_currentPeripheral = std::make_unique<SimpleBLE::Peripheral>(simple_peripheral);
             return;
@@ -377,4 +377,4 @@ void SimpleCommKitBleCentralPrivate::triggerError(SimpleCommKit::ErrorCode error
     }
 }
 
-}
+} // namespace SimpleCommKit
