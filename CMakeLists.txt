@@ -108,6 +108,7 @@ set(SRC_MODULES
     SimpleCommKitUtil
     SimpleCommKitBle
     SimpleCommKitSerialPort
+    SimpleCommKitHid
 )
 
 if(ENABLE_SIMPLECOMMKITPYBIND)

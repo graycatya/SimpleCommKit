@@ -14,6 +14,7 @@ using ErrorCode = uint32_t;
 enum class ModuleID : uint8_t {
     SimpleCommKitBle = 0,         // Bluetooth module
     SimpleCommKitSerialPort = 1,  // Serial Port module
+    SimpleCommKitHid = 2,         // HID module
     SimpleCommKitMaxModule = 0xFF
 };
 
@@ -62,6 +63,19 @@ namespace ErrorCodes {
     constexpr ErrorCode SimpleCommKitSerialPortWriteError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitSerialPort, ErrorType::SimpleCommKitError, 0, 6);
     constexpr ErrorCode SimpleCommKitSerialPortHotPlugError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitSerialPort, ErrorType::SimpleCommKitError, 0, 7);
     constexpr ErrorCode SimpleCommKitSerialPortFlushError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitSerialPort, ErrorType::SimpleCommKitError, 0, 8);
+
+    // SimpleCommKitHid module error codes
+    constexpr ErrorCode SimpleCommKitHidSuccess = MAKE_ERROR_CODE(ModuleID::SimpleCommKitHid, ErrorType::SimpleCommKitSuccess, 0, 0);
+    constexpr ErrorCode SimpleCommKitHidInitError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitHid, ErrorType::SimpleCommKitError, 0, 1);
+    constexpr ErrorCode SimpleCommKitHidExitError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitHid, ErrorType::SimpleCommKitError, 0, 2);
+    constexpr ErrorCode SimpleCommKitHidOpenError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitHid, ErrorType::SimpleCommKitError, 0, 3);
+    constexpr ErrorCode SimpleCommKitHidCloseError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitHid, ErrorType::SimpleCommKitError, 0, 4);
+    constexpr ErrorCode SimpleCommKitHidNotOpenError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitHid, ErrorType::SimpleCommKitError, 0, 5);
+    constexpr ErrorCode SimpleCommKitHidReadError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitHid, ErrorType::SimpleCommKitError, 0, 6);
+    constexpr ErrorCode SimpleCommKitHidWriteError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitHid, ErrorType::SimpleCommKitError, 0, 7);
+    constexpr ErrorCode SimpleCommKitHidFeatureReportError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitHid, ErrorType::SimpleCommKitError, 0, 8);
+    constexpr ErrorCode SimpleCommKitHidHotplugError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitHid, ErrorType::SimpleCommKitError, 0, 9);
+    constexpr ErrorCode SimpleCommKitHidEnumerateError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitHid, ErrorType::SimpleCommKitError, 0, 10);
 }
 
 // Error code resolver (replaces the original ErrorUtil)
@@ -123,6 +137,18 @@ inline const std::unordered_map<ErrorCode, std::string> SimpleCommKitErrorMap::e
     {ErrorCodes::SimpleCommKitSerialPortWriteError, "SimpleCommKitSerialPort write error"},
     {ErrorCodes::SimpleCommKitSerialPortHotPlugError, "SimpleCommKitSerialPort hot plug error"},
     {ErrorCodes::SimpleCommKitSerialPortFlushError, "SimpleCommKitSerialPort flush error"},
+
+    {ErrorCodes::SimpleCommKitHidSuccess, "SimpleCommKitHid success"},
+    {ErrorCodes::SimpleCommKitHidInitError, "SimpleCommKitHid init error"},
+    {ErrorCodes::SimpleCommKitHidExitError, "SimpleCommKitHid exit error"},
+    {ErrorCodes::SimpleCommKitHidOpenError, "SimpleCommKitHid open error"},
+    {ErrorCodes::SimpleCommKitHidCloseError, "SimpleCommKitHid close error"},
+    {ErrorCodes::SimpleCommKitHidNotOpenError, "SimpleCommKitHid device not open error"},
+    {ErrorCodes::SimpleCommKitHidReadError, "SimpleCommKitHid read error"},
+    {ErrorCodes::SimpleCommKitHidWriteError, "SimpleCommKitHid write error"},
+    {ErrorCodes::SimpleCommKitHidFeatureReportError, "SimpleCommKitHid feature report error"},
+    {ErrorCodes::SimpleCommKitHidHotplugError, "SimpleCommKitHid hotplug error"},
+    {ErrorCodes::SimpleCommKitHidEnumerateError, "SimpleCommKitHid enumerate error"},
 
 };
 
