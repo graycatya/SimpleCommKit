@@ -773,11 +773,9 @@ void SimpleCommKitHidPrivate::stopReadThread(const std::string& path)
     // Move thread out so we can join without holding the lock
     auto thread = std::move(entry.readThread);
     lock.unlock();
-    std::cout << "join" << std::endl;
     if (thread && thread->joinable()) {
         thread->join();
     }
-    std::cout << "join end" << std::endl;
 }
 
 void SimpleCommKitHidPrivate::stopAllReadThreads()
