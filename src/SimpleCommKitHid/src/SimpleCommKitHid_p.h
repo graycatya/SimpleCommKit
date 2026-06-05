@@ -15,6 +15,15 @@
 
 namespace SimpleCommKit {
 
+// Per-device entry stored in m_deviceMap
+struct HidDeviceEntry {
+    hid_device*                       handle = nullptr;
+    std::unique_ptr<std::thread>      readThread;
+    std::shared_ptr<std::atomic<bool>> readStopFlag;    // shared so lambda sees updates
+    std::shared_ptr<std::atomic<int>>  readPollMs;
+    std::shared_ptr<std::atomic<int>>  readDataLength;
+};
+
 class SimpleCommKitHidPrivate
 {
     SIMPLECOMMKIT_DECLARE_PUBLIC(SimpleCommKitHid)
@@ -30,23 +39,28 @@ public:
                             unsigned short product_id);
 
     //
-    // Lifecycle
+    // Lifecycle – multi-device
     //
     bool init(unsigned short vendor_id, unsigned short product_id);
     void exit();
 
-    bool open(const std::string& path);
+    bool open(const std::string& path, bool readable = true);
     bool open(unsigned short vendor_id,
               unsigned short product_id,
-              const std::string& serial_number);
-    void close();
-    bool isOpen();
+              const std::string& serial_number = "",
+              bool readable = true);
+    void close();                                    // close all
+    void close(const std::string& path);             // close one
+    bool isOpen();                                   // any open?
+    bool isOpen(const std::string& path);            // specific open?
 
     //
-    // I/O
+    // I/O  (path-less versions operate on first open device)
     //
     int write(const std::vector<uint8_t>& data);
+    int write(const std::string& path, const std::vector<uint8_t>& data);
     int sendFeatureReport(const std::vector<uint8_t>& data);
+    int sendFeatureReport(const std::string& path, const std::vector<uint8_t>& data);
 
     //
     // Hotplug
@@ -59,7 +73,7 @@ public:
     int  getHotplugPollInterval();
 
     //
-    // Read polling config
+    // Read polling config (global defaults)
     //
     void setReadPollInterval(int ms);
     int  getReadPollInterval();
@@ -68,8 +82,17 @@ public:
     int  getReadDataLength();
 
     //
+    // Per-device read config
+    //
+    void setReadPollInterval(const std::string& path, int ms);
+    int  getReadPollInterval(const std::string& path);
+    void setReadDataLength(const std::string& path, int length);
+    int  getReadDataLength(const std::string& path);
+
+    //
     // Device list
     //
+    std::vector<std::string> getOpenPaths();
     std::vector<SimpleCommKitHidDeviceInfo> getDeviceList();
 
     //
@@ -96,8 +119,9 @@ private:
                         std::vector<SimpleCommKitHidDeviceInfo>& added,
                         std::vector<SimpleCommKitHidDeviceInfo>& removed);
 
-    void startReadThread();
-    void stopReadThread();
+    void startReadThread(const std::string& path);
+    void stopReadThread(const std::string& path);
+    void stopAllReadThreads();
 
     static std::wstring utf8ToWstring(const std::string& str);
     static std::string  wstringToUtf8(const std::wstring& wstr);
@@ -107,10 +131,11 @@ private:
     //
     SimpleCommKitHid* q_ptr;
 
-    // hidapi device handle
-    hid_device* m_device = nullptr;
+    // Multi-device map: key = device path
+    std::map<std::string, HidDeviceEntry> m_deviceMap;
+    mutable std::mutex m_deviceMapMutex;
 
-    // cached device map (key = path)
+    // cached device info map (key = path)
     std::map<std::string, SimpleCommKitHidDeviceInfo> m_devices;
     mutable std::mutex m_devicesMutex;
 
@@ -124,15 +149,12 @@ private:
     std::function<void(const std::vector<SimpleCommKitHidDeviceInfo>&,
                        const std::vector<SimpleCommKitHidDeviceInfo>&)> m_onHotPlug;
 
-    // read thread
-    std::unique_ptr<std::thread> m_readThread;
-    std::atomic<bool> m_readThreadStop{true};
-    std::atomic<int>  m_readPollMs{1};
-    std::atomic<int>  m_readDataLength{64};
+    // Read config defaults (used for new devices)
+    std::atomic<int>  m_defaultReadPollMs{100};
+    std::atomic<int>  m_defaultReadDataLength{64};
 
+    // Callbacks
     std::function<void(const std::vector<uint8_t>&)> m_onRead;
-
-    // error callback
     std::function<void(SimpleCommKit::ErrorCode)> m_onError;
 };
 

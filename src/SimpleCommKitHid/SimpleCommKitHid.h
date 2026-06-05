@@ -52,24 +52,36 @@ public:
         unsigned short product_id = 0x0);
 
     //
-    // Lifecycle: init / exit / open / close
+    // Lifecycle: init / exit / open / close  (multi-device)
     //
     bool init(unsigned short vendor_id  = 0x0,
               unsigned short product_id = 0x0);
     void exit();
 
-    bool open(const std::string& path);
+    // Open by path — can be called multiple times for different paths
+    bool open(const std::string& path, bool readable = true);
     bool open(unsigned short vendor_id,
               unsigned short product_id,
-              const std::string& serial_number = "");
+              const std::string& serial_number = "",
+              bool readable = true);
+
+    // Close all devices
     void close();
+    // Close a specific device by path
+    void close(const std::string& path);
+
+    // At least one device open
     bool is_Open();
+    // Check if a specific device is open
+    bool is_Open(const std::string& path);
 
     //
-    // I/O
+    // I/O  (path-less versions operate on the first opened device)
     //
     int write(const std::vector<uint8_t>& data);
+    int write(const std::string& path, const std::vector<uint8_t>& data);
     int send_Feature_Report(const std::vector<uint8_t>& data);
+    int send_Feature_Report(const std::string& path, const std::vector<uint8_t>& data);
 
     //
     // Hotplug (polling-based detection)
@@ -82,16 +94,29 @@ public:
     int  get_Hotplug_Poll_Interval();
 
     //
-    // Read polling configuration
+    // Read polling configuration (global defaults for new devices)
     //
     void set_Read_Poll_Interval(int ms);
     int  get_Read_Poll_Interval();
 
     //
-    // Read data length (number of bytes to read per poll; default 1)
+    // Read data length (number of bytes to read per poll; default 64)
     //
     void set_Read_Data_Length(int length);
     int  get_Read_Data_Length();
+
+    //
+    // Per-device read config
+    //
+    void set_Read_Poll_Interval(const std::string& path, int ms);
+    int  get_Read_Poll_Interval(const std::string& path);
+    void set_Read_Data_Length(const std::string& path, int length);
+    int  get_Read_Data_Length(const std::string& path);
+
+    //
+    // Get list of currently open device paths
+    //
+    std::vector<std::string> get_Open_Paths();
 
     //
     // Cached device list (populated by init / start_Hotplug)

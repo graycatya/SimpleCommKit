@@ -1,0 +1,3 @@
+# Test dependencies for SimpleCommKitAiHid
+pytest>=7.0
+httpx

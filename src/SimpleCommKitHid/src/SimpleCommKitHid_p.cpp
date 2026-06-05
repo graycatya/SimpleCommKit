@@ -126,7 +126,17 @@ SimpleCommKitHidPrivate::enumerateDevices(unsigned short vendor_id,
         return result;
     }
 
+    // Deduplicate by (path, interface_number) — hidapi may return duplicates
+    std::map<std::string, SimpleCommKitHidDeviceInfo> dedup;
+
     for (hid_device_info* cur = hid_info; cur != nullptr; cur = cur->next) {
+        std::string key = std::string(cur->path ? cur->path : "")
+                        + "#" + std::to_string(cur->interface_number);
+
+        if (dedup.find(key) != dedup.end()) {
+            continue;  // already seen this (path, interface) pair
+        }
+
         SimpleCommKitHidDeviceInfo info;
         info.interface_number    = cur->interface_number;
         info.manufacturer_string = wstringToUtf8(cur->manufacturer_string
@@ -141,6 +151,8 @@ SimpleCommKitHidPrivate::enumerateDevices(unsigned short vendor_id,
                                                      ? cur->serial_number
                                                      : L"");
         info.path                = cur->path ? cur->path : "";
+
+        dedup[key] = info;
         result.push_back(info);
     }
 
@@ -193,10 +205,15 @@ SimpleCommKitHidPrivate::~SimpleCommKitHidPrivate()
 {
     try {
         stopHotplug();
-        stopReadThread();
-        if (m_device) {
-            hid_close(m_device);
-            m_device = nullptr;
+        stopAllReadThreads();
+        {
+            std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+            for (auto& [path, entry] : m_deviceMap) {
+                if (entry.handle) {
+                    hid_close(entry.handle);
+                }
+            }
+            m_deviceMap.clear();
         }
     } catch (...) {
         // ignore errors in destructor
@@ -214,7 +231,7 @@ SimpleCommKitHidPrivate::getAvailableDevices(unsigned short vendor_id,
 }
 
 //
-// Lifecycle
+// Lifecycle — multi-device
 //
 bool SimpleCommKitHidPrivate::init(unsigned short vendor_id,
                                     unsigned short product_id)
@@ -246,11 +263,16 @@ void SimpleCommKitHidPrivate::exit()
 {
     try {
         stopHotplug();
-        stopReadThread();
+        stopAllReadThreads();
 
-        if (m_device) {
-            hid_close(m_device);
-            m_device = nullptr;
+        {
+            std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+            for (auto& [path, entry] : m_deviceMap) {
+                if (entry.handle) {
+                    hid_close(entry.handle);
+                }
+            }
+            m_deviceMap.clear();
         }
 
         hid_exit();
@@ -264,30 +286,44 @@ void SimpleCommKitHidPrivate::exit()
     }
 }
 
-bool SimpleCommKitHidPrivate::open(const std::string& path)
+bool SimpleCommKitHidPrivate::open(const std::string& path, bool readable)
 {
-    if (m_device) {
-        triggerError(ErrorCodes::SimpleCommKitHidOpenError);
-        return false;
+    {
+        std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+        if (m_deviceMap.find(path) != m_deviceMap.end()) {
+            triggerError(ErrorCodes::SimpleCommKitHidOpenError);
+            return false;  // already open
+        }
     }
 
     try {
-        m_device = hid_open_path(path.c_str());
-        if (!m_device) {
+        hid_device* handle = hid_open_path(path.c_str());
+        if (!handle) {
             triggerError(ErrorCodes::SimpleCommKitHidOpenError);
             return false;
         }
 
 #ifdef _WIN32
-        // Increase input buffer count on Windows for better throughput
-        HidD_SetNumInputBuffers(*static_cast<HANDLE*>(m_device), 9);
+        HidD_SetNumInputBuffers(*static_cast<HANDLE*>(handle), 9);
 #endif
 
-        // Set blocking mode
-        hid_set_nonblocking(m_device, 0);
+        // Use non-blocking mode — hid_read_timeout handles the wait
+        hid_set_nonblocking(handle, 1);
 
-        // Start background read thread
-        startReadThread();
+        HidDeviceEntry entry;
+        entry.handle = handle;
+        entry.readStopFlag   = std::make_shared<std::atomic<bool>>(true);
+        entry.readPollMs     = std::make_shared<std::atomic<int>>(m_defaultReadPollMs.load());
+        entry.readDataLength = std::make_shared<std::atomic<int>>(m_defaultReadDataLength.load());
+
+        {
+            std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+            m_deviceMap[path] = std::move(entry);
+        }
+
+        if (readable) {
+            startReadThread(path);
+        }
 
         return true;
     } catch (const std::exception&) {
@@ -298,13 +334,9 @@ bool SimpleCommKitHidPrivate::open(const std::string& path)
 
 bool SimpleCommKitHidPrivate::open(unsigned short vendor_id,
                                     unsigned short product_id,
-                                    const std::string& serial_number)
+                                    const std::string& serial_number,
+                                    bool readable)
 {
-    if (m_device) {
-        triggerError(ErrorCodes::SimpleCommKitHidOpenError);
-        return false;
-    }
-
     try {
         const wchar_t* wsn = nullptr;
         std::wstring wserial;
@@ -313,19 +345,46 @@ bool SimpleCommKitHidPrivate::open(unsigned short vendor_id,
             wsn = wserial.c_str();
         }
 
-        m_device = hid_open(vendor_id, product_id, wsn);
-        if (!m_device) {
+        hid_device* handle = hid_open(vendor_id, product_id, wsn);
+        if (!handle) {
             triggerError(ErrorCodes::SimpleCommKitHidOpenError);
             return false;
         }
 
+        // Use VID:PID:SERIAL as key (hid_open doesn't return path)
+        std::string deviceKey = std::to_string(vendor_id) + ":" +
+                                std::to_string(product_id) + ":" +
+                                (serial_number.empty() ? "*" : serial_number);
+
+        {
+            std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+            if (m_deviceMap.find(deviceKey) != m_deviceMap.end()) {
+                hid_close(handle);
+                triggerError(ErrorCodes::SimpleCommKitHidOpenError);
+                return false;  // already open
+            }
+        }
+
 #ifdef _WIN32
-        HidD_SetNumInputBuffers(*static_cast<HANDLE*>(m_device), 9);
+        HidD_SetNumInputBuffers(*static_cast<HANDLE*>(handle), 9);
 #endif
 
-        hid_set_nonblocking(m_device, 0);
+        hid_set_nonblocking(handle, 1);
 
-        startReadThread();
+        HidDeviceEntry entry;
+        entry.handle = handle;
+        entry.readStopFlag   = std::make_shared<std::atomic<bool>>(true);
+        entry.readPollMs     = std::make_shared<std::atomic<int>>(m_defaultReadPollMs.load());
+        entry.readDataLength = std::make_shared<std::atomic<int>>(m_defaultReadDataLength.load());
+
+        {
+            std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+            m_deviceMap[deviceKey] = std::move(entry);
+        }
+
+        if (readable) {
+            startReadThread(deviceKey);
+        }
 
         return true;
     } catch (const std::exception&) {
@@ -336,39 +395,94 @@ bool SimpleCommKitHidPrivate::open(unsigned short vendor_id,
 
 void SimpleCommKitHidPrivate::close()
 {
-    try {
-        stopReadThread();
+    // Close all devices — stopReadThread closes handles for readable ones
+    stopAllReadThreads();
 
-        if (m_device) {
-            hid_close(m_device);
-            m_device = nullptr;
+    std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+    // Close remaining handles (non-readable devices)
+    for (auto& [path, entry] : m_deviceMap) {
+        if (entry.handle) {
+            hid_close(entry.handle);
+            entry.handle = nullptr;
         }
-    } catch (const std::exception&) {
-        triggerError(ErrorCodes::SimpleCommKitHidCloseError);
+    }
+    m_deviceMap.clear();
+}
+
+void SimpleCommKitHidPrivate::close(const std::string& path)
+{
+    // stopReadThread sets stopFlag, closes handle, joins thread
+    stopReadThread(path);
+
+    std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+    auto it = m_deviceMap.find(path);
+    if (it != m_deviceMap.end()) {
+        // handle already closed by stopReadThread (if readable),
+        // still close for non-readable devices
+        if (it->second.handle) {
+            hid_close(it->second.handle);
+        }
+        m_deviceMap.erase(it);
     }
 }
 
 bool SimpleCommKitHidPrivate::isOpen()
 {
-    return m_device != nullptr;
+    std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+    return !m_deviceMap.empty();
+}
+
+bool SimpleCommKitHidPrivate::isOpen(const std::string& path)
+{
+    std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+    return m_deviceMap.find(path) != m_deviceMap.end();
 }
 
 //
-// I/O
+// I/O  (path-less versions operate on first open device)
 //
+static hid_device* getFirstDevice(std::map<std::string, HidDeviceEntry>& deviceMap)
+{
+    if (deviceMap.empty()) return nullptr;
+    return deviceMap.begin()->second.handle;
+}
+
 int SimpleCommKitHidPrivate::write(const std::vector<uint8_t>& data)
 {
-    if (!m_device) {
+    if (data.empty()) return 0;
+
+    std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+    hid_device* handle = getFirstDevice(m_deviceMap);
+    if (!handle) {
         triggerError(ErrorCodes::SimpleCommKitHidNotOpenError);
         return -1;
     }
 
-    if (data.empty()) {
-        return 0;
+    try {
+        int ret = hid_write(handle, data.data(), data.size());
+        if (ret < 0) {
+            triggerError(ErrorCodes::SimpleCommKitHidWriteError);
+        }
+        return ret;
+    } catch (const std::exception&) {
+        triggerError(ErrorCodes::SimpleCommKitHidWriteError);
+        return -1;
+    }
+}
+
+int SimpleCommKitHidPrivate::write(const std::string& path, const std::vector<uint8_t>& data)
+{
+    if (data.empty()) return 0;
+
+    std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+    auto it = m_deviceMap.find(path);
+    if (it == m_deviceMap.end() || !it->second.handle) {
+        triggerError(ErrorCodes::SimpleCommKitHidNotOpenError);
+        return -1;
     }
 
     try {
-        int ret = hid_write(m_device, data.data(), data.size());
+        int ret = hid_write(it->second.handle, data.data(), data.size());
         if (ret < 0) {
             triggerError(ErrorCodes::SimpleCommKitHidWriteError);
         }
@@ -381,17 +495,40 @@ int SimpleCommKitHidPrivate::write(const std::vector<uint8_t>& data)
 
 int SimpleCommKitHidPrivate::sendFeatureReport(const std::vector<uint8_t>& data)
 {
-    if (!m_device) {
+    if (data.empty()) return 0;
+
+    std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+    hid_device* handle = getFirstDevice(m_deviceMap);
+    if (!handle) {
         triggerError(ErrorCodes::SimpleCommKitHidNotOpenError);
         return -1;
     }
 
-    if (data.empty()) {
-        return 0;
+    try {
+        int ret = hid_send_feature_report(handle, data.data(), data.size());
+        if (ret < 0) {
+            triggerError(ErrorCodes::SimpleCommKitHidFeatureReportError);
+        }
+        return ret;
+    } catch (const std::exception&) {
+        triggerError(ErrorCodes::SimpleCommKitHidFeatureReportError);
+        return -1;
+    }
+}
+
+int SimpleCommKitHidPrivate::sendFeatureReport(const std::string& path, const std::vector<uint8_t>& data)
+{
+    if (data.empty()) return 0;
+
+    std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+    auto it = m_deviceMap.find(path);
+    if (it == m_deviceMap.end() || !it->second.handle) {
+        triggerError(ErrorCodes::SimpleCommKitHidNotOpenError);
+        return -1;
     }
 
     try {
-        int ret = hid_send_feature_report(m_device, data.data(), data.size());
+        int ret = hid_send_feature_report(it->second.handle, data.data(), data.size());
         if (ret < 0) {
             triggerError(ErrorCodes::SimpleCommKitHidFeatureReportError);
         }
@@ -426,6 +563,13 @@ void SimpleCommKitHidPrivate::startHotplug(unsigned short vendor_id,
                 std::vector<SimpleCommKitHidDeviceInfo> added;
                 std::vector<SimpleCommKitHidDeviceInfo> removed;
                 compareDevices(currentDevices, added, removed);
+
+                // Auto-close open handles for removed devices
+                if (!removed.empty()) {
+                    for (const auto& dev : removed) {
+                        close(dev.path);
+                    }
+                }
 
                 if (m_onHotPlug && (!added.empty() || !removed.empty())) {
                     m_onHotPlug(added, removed);
@@ -467,26 +611,81 @@ int SimpleCommKitHidPrivate::getHotplugPollInterval()
 }
 
 //
-// Read polling config
+// Read polling config (global defaults)
 //
 void SimpleCommKitHidPrivate::setReadPollInterval(int ms)
 {
-    m_readPollMs = (ms > 0) ? ms : 1;
+    m_defaultReadPollMs = (ms > 0) ? ms : 1;
 }
 
 int SimpleCommKitHidPrivate::getReadPollInterval()
 {
-    return m_readPollMs;
+    return m_defaultReadPollMs;
 }
 
 void SimpleCommKitHidPrivate::setReadDataLength(int length)
 {
-    m_readDataLength = (length > 0) ? length : 64;
+    m_defaultReadDataLength = (length > 0) ? length : 64;
 }
 
 int SimpleCommKitHidPrivate::getReadDataLength()
 {
-    return m_readDataLength;
+    return m_defaultReadDataLength;
+}
+
+//
+// Per-device read config
+//
+void SimpleCommKitHidPrivate::setReadPollInterval(const std::string& path, int ms)
+{
+    std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+    auto it = m_deviceMap.find(path);
+    if (it != m_deviceMap.end() && it->second.readPollMs) {
+        it->second.readPollMs->store((ms > 0) ? ms : 1);
+    }
+}
+
+int SimpleCommKitHidPrivate::getReadPollInterval(const std::string& path)
+{
+    std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+    auto it = m_deviceMap.find(path);
+    if (it != m_deviceMap.end() && it->second.readPollMs) {
+        return it->second.readPollMs->load();
+    }
+    return m_defaultReadPollMs;
+}
+
+void SimpleCommKitHidPrivate::setReadDataLength(const std::string& path, int length)
+{
+    std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+    auto it = m_deviceMap.find(path);
+    if (it != m_deviceMap.end() && it->second.readDataLength) {
+        it->second.readDataLength->store((length > 0) ? length : 64);
+    }
+}
+
+int SimpleCommKitHidPrivate::getReadDataLength(const std::string& path)
+{
+    std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+    auto it = m_deviceMap.find(path);
+    if (it != m_deviceMap.end() && it->second.readDataLength) {
+        return it->second.readDataLength->load();
+    }
+    return m_defaultReadDataLength;
+}
+
+//
+// Open paths
+//
+std::vector<std::string> SimpleCommKitHidPrivate::getOpenPaths()
+{
+    std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+    std::vector<std::string> paths;
+    paths.reserve(m_deviceMap.size());
+    for (const auto& [path, entry] : m_deviceMap) {
+        paths.push_back(path);
+    }
+    return paths;
 }
 
 //
@@ -504,30 +703,36 @@ std::vector<SimpleCommKitHidDeviceInfo> SimpleCommKitHidPrivate::getDeviceList()
 }
 
 //
-// Read thread
+// Read thread (per-device)
 //
-void SimpleCommKitHidPrivate::startReadThread()
+void SimpleCommKitHidPrivate::startReadThread(const std::string& path)
 {
-    stopReadThread();  // ensure no duplicate threads
+    stopReadThread(path);  // ensure no duplicate threads
 
-    m_readThreadStop = false;
+    // Get the entry under lock
+    std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+    auto it = m_deviceMap.find(path);
+    if (it == m_deviceMap.end()) return;
 
-    m_readThread = std::make_unique<std::thread>([this]() {
-        while (!m_readThreadStop) {
-            if (!m_device) {
+    auto& entry = it->second;
+    hid_device* handle = entry.handle;
+    auto stopFlag   = entry.readStopFlag;
+    auto pollMs     = entry.readPollMs;
+    auto dataLength = entry.readDataLength;
+
+    stopFlag->store(false);
+
+    entry.readThread = std::make_unique<std::thread>([this, path, handle, stopFlag, pollMs, dataLength]() {
+        while (!stopFlag->load()) {
+            if (!handle) {
                 break;
             }
-
             try {
-                int dataLen = m_readDataLength.load();
+                int dataLen = dataLength->load();
                 // +1 for possible Report ID byte
                 std::vector<uint8_t> buf(static_cast<size_t>(dataLen) + 1);
-
-                int res = hid_read(m_device, buf.data(), buf.size());
-
+                int res = hid_read_timeout(handle, buf.data(), buf.size(), pollMs->load());
                 if (res > 0) {
-                    // Return only the requested data length (skip Report ID byte
-                    // if present)
                     int copyLen = (res >= dataLen) ? dataLen : res;
                     std::vector<uint8_t> data(buf.begin() + 1,
                                                buf.begin() + 1 + copyLen);
@@ -535,31 +740,59 @@ void SimpleCommKitHidPrivate::startReadThread()
                         m_onRead(data);
                     }
                 } else if (res < 0) {
-                    // Read error – device may have been unplugged
-                    triggerError(ErrorCodes::SimpleCommKitHidReadError);
+                    // Read error or handle closed — just exit loop
                     break;
                 }
-                // res == 0 means no data available (shouldn't happen in
-                // blocking mode, but guard anyway)
+                // res == 0: timeout expired, no data — loop immediately retries
             } catch (const std::exception&) {
                 triggerError(ErrorCodes::SimpleCommKitHidReadError);
                 break;
             }
-
-            std::this_thread::sleep_for(
-                std::chrono::milliseconds(m_readPollMs.load()));
         }
     });
 }
 
-void SimpleCommKitHidPrivate::stopReadThread()
+void SimpleCommKitHidPrivate::stopReadThread(const std::string& path)
 {
-    if (m_readThread) {
-        m_readThreadStop = true;
-        if (m_readThread->joinable()) {
-            m_readThread->join();
+    std::unique_lock<std::mutex> lock(m_deviceMapMutex);
+    auto it = m_deviceMap.find(path);
+    if (it == m_deviceMap.end()) return;
+
+    auto& entry = it->second;
+    if (entry.readStopFlag) {
+        entry.readStopFlag->store(true);
+    }
+
+    // Only close handle if a read thread is actually running.
+    // Otherwise we risk closing a freshly-opened handle from open()→startReadThread().
+    if (entry.readThread && entry.handle) {
+        hid_close(entry.handle);
+        entry.handle = nullptr;
+    }
+
+    // Move thread out so we can join without holding the lock
+    auto thread = std::move(entry.readThread);
+    lock.unlock();
+    std::cout << "join" << std::endl;
+    if (thread && thread->joinable()) {
+        thread->join();
+    }
+    std::cout << "join end" << std::endl;
+}
+
+void SimpleCommKitHidPrivate::stopAllReadThreads()
+{
+    // Copy paths to avoid issues with erasing while iterating
+    std::vector<std::string> paths;
+    {
+        std::lock_guard<std::mutex> lock(m_deviceMapMutex);
+        for (const auto& [path, entry] : m_deviceMap) {
+            paths.push_back(path);
         }
-        m_readThread.reset();
+    }
+
+    for (const auto& path : paths) {
+        stopReadThread(path);
     }
 }
 

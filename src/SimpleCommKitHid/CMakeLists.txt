@@ -34,23 +34,19 @@ target_include_directories(${PROJECT_NAME} PUBLIC
 # hidapi include path (assuming hidapi is provided via find_package or 3rdparty)
 # Adjust HIDAPI_INCLUDE_DIR or use find_package(hidapi) as appropriate
 find_package(hidapi QUIET)
-if(hidapi_FOUND)
-    target_link_libraries(${PROJECT_NAME} PUBLIC hidapi::hidapi)
-else()
-    # Fallback: try pkg-config style or assume it's in the system
-    find_library(HIDAPI_LIBRARY hidapi)
-    find_path(HIDAPI_INCLUDE_DIR hidapi.h)
-    if(HIDAPI_LIBRARY AND HIDAPI_INCLUDE_DIR)
-        target_include_directories(${PROJECT_NAME} PRIVATE ${HIDAPI_INCLUDE_DIR})
-        target_link_libraries(${PROJECT_NAME} PUBLIC ${HIDAPI_LIBRARY})
-    else()
-        message(WARNING "hidapi not found – please set HIDAPI_INCLUDE_DIR and HIDAPI_LIBRARY")
+if(NOT WIN32 AND NOT APPLE AND CMAKE_SYSTEM_NAME MATCHES "Linux")
+    if(TARGET hidapi::hidraw)
+        target_link_libraries(${PROJECT_NAME} PUBLIC hidapi::hidraw)
     endif()
+    if(TARGET hidapi::libusb)
+        target_link_libraries(${PROJECT_NAME} PUBLIC hidapi::libusb)
+    endif()
+else()
+    target_link_libraries(${PROJECT_NAME} PUBLIC hidapi::hidapi)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
     SimpleCommKitUtil
-    hidapi
 )
 
 

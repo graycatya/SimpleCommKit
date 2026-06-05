@@ -1,0 +1,5 @@
+# Allow all users to access HID devices (keyboard, mouse, etc.)
+# Install: sudo cp 99-hidraw.rules /etc/udev/rules.d/
+# Then run:  sudo udevadm control --reload-rules && sudo udevadm trigger
+
+KERNEL=="hidraw*", SUBSYSTEM=="hidraw", MODE="0666"
