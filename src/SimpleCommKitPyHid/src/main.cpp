@@ -238,14 +238,16 @@ void wrap_hid(py::module& m) {
                         delete p;
                     });
                 self.set_Callback_On_Read(
-                    [cb](const std::vector<uint8_t>& data) {
+                    [cb](const SimpleCommKitHidDeviceInfo& device_info,
+                          const std::vector<uint8_t>& data) {
                         py::gil_scoped_acquire gil;
-                        (*cb)(py::bytes(reinterpret_cast<const char*>(data.data()), data.size()));
+                        (*cb)(py::bytes(reinterpret_cast<const char*>(data.data()), data.size()),
+                              device_info.path);
                     });
             },
             py::arg("callback"),
             py::keep_alive<1, 2>(),
-            "Set callback for incoming read data. Callback receives bytes payload.")
+            "Set callback for incoming read data. Callback receives (bytes, path).")
 
         .def("set_callback_on_hotplug",
             [](SimpleCommKitHid& self, py::function callback) {

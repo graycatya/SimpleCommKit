@@ -722,7 +722,19 @@ void SimpleCommKitHidPrivate::startReadThread(const std::string& path)
 
     stopFlag->store(false);
 
-    entry.readThread = std::make_unique<std::thread>([this, path, handle, stopFlag, pollMs, dataLength]() {
+    // Look up device info for the callback
+    SimpleCommKitHidDeviceInfo devInfo;
+    {
+        std::lock_guard<std::mutex> devLock(m_devicesMutex);
+        auto devIt = m_devices.find(path);
+        if (devIt != m_devices.end()) {
+            devInfo = devIt->second;
+        } else {
+            devInfo.path = path;  // fallback: at least provide the path
+        }
+    }
+
+    entry.readThread = std::make_unique<std::thread>([this, path, handle, stopFlag, pollMs, dataLength, devInfo]() {
         while (!stopFlag->load()) {
             if (!handle) {
                 break;
@@ -737,7 +749,7 @@ void SimpleCommKitHidPrivate::startReadThread(const std::string& path)
                     std::vector<uint8_t> data(buf.begin() + 1,
                                                buf.begin() + 1 + copyLen);
                     if (m_onRead) {
-                        m_onRead(data);
+                        m_onRead(devInfo, data);
                     }
                 } else if (res < 0) {
                     // Read error or handle closed — just exit loop
@@ -798,7 +810,8 @@ void SimpleCommKitHidPrivate::stopAllReadThreads()
 // Callbacks
 //
 void SimpleCommKitHidPrivate::setCallbackOnRead(
-    std::function<void(const std::vector<uint8_t>&)> callback)
+    std::function<void(const SimpleCommKitHidDeviceInfo&,
+                       const std::vector<uint8_t>&)> callback)
 {
     m_onRead = std::move(callback);
 }

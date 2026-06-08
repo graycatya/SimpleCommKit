@@ -336,7 +336,7 @@ def set_device_config(path: str, request: ConfigRequest):
 def _setup_read_callback(hid, path: str):
     """Register a read callback that pushes data to SSE."""
 
-    def read_callback(data: bytes):
+    def read_callback(data: bytes, device_path: str):
         item = {
             "path": path,
             "data_hex": data.hex(),

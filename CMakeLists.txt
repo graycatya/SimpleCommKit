@@ -26,11 +26,11 @@ message(STATUS " .. cmake current source ................. = ${CMAKE_CURRENT_SOU
 message(STATUS " .. cmake system name ................. = ${CMAKE_SYSTEM_NAME}")
 message(STATUS "------------------------------------------------------------ ")
 
+# Prepend so custom FindOpenSSL.cmake is found before system's
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 option(SIMPLECOMMKIT_BUILD_SHARED_LIBS "SimpleCommKit Build shared libraries" OFF)
 option(SIMPLECOMMKIT_EXAMPLES "SimpleCommKit Build all modules examples" OFF)
 option(SIMPLECOMMKITBLE_EXAMPLES "SimpleCommKitBle Examples" OFF)
-option(SIMPLECOMMKITUTIL_EXAMPLES "SimpleCommKitUtil Examples" OFF)
 option(SIMPLECOMMKITSERIALPORT_EXAMPLES "SimpleCommKitSerialPort Examples" OFF)
 option(SIMPLECOMMKITHID_EXAMPLES "SimpleCommKitHid Examples" OFF)
 option(ENABLE_SIMPLECOMMKITPYBIND "Enable SimpleCommKitPyBind" OFF)
@@ -88,12 +88,7 @@ set(3RDPARTY_ZIPS
     libusb-cmake
     CSerialPort
     hidapi
-
-    openssl-cmake
-    libuv
-    uSockets
-    mongoose
-
+    libhv
 )
 
 if(ENABLE_SIMPLECOMMKITPYBIND)
@@ -101,8 +96,7 @@ if(ENABLE_SIMPLECOMMKITPYBIND)
 endif()
 
 set(IS_CUSTOM_BUILDS_PROJECT
-    uSockets
-    mongoose
+  
 )
 
 set(SRC_MODULES
@@ -132,7 +126,12 @@ if(CMAKE_SYSTEM_NAME MATCHES "IOS")
         CSerialPort
         hidapi
     )
+    list(REMOVE_ITEM ENABLE_SIMPLECOMMKITPYBIND
+        SimpleCommKitPySerialPort
+        SimpleCommKitPyHid
+    )
 endif()
+
 
 foreach(3RDPARTY ${3RDPARTY_ZIPS})
     if("${3RDPARTY}" IN_LIST IS_CUSTOM_BUILDS_PROJECT)

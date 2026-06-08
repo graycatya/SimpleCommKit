@@ -143,8 +143,13 @@ int main() {
     }
 
     // Register read callback (shared across all open devices)
-    hidDevice.set_Callback_On_Read([](const std::vector<uint8_t>& data) {
-        std::cout << "\n[CALLBACK] Received " << data.size() << " byte(s): ";
+    hidDevice.set_Callback_On_Read([](const hid::SimpleCommKitHidDeviceInfo& devInfo,
+                                       const std::vector<uint8_t>& data) {
+        std::cout << "\n[CALLBACK] Received from " << devInfo.path;
+        if (!devInfo.product_string.empty()) {
+            std::cout << " (" << devInfo.product_string << ")";
+        }
+        std::cout << ", " << data.size() << " byte(s): ";
         for (const auto& byte : data) {
             std::cout << std::hex << std::setfill('0') << std::setw(2)
                       << static_cast<int>(byte) << " ";

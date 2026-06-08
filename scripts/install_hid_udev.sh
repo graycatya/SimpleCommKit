@@ -1,6 +1,6 @@
 #!/bin/bash
 # Install udev rules for HID device access
-# Run with: sudo bash install_udev.sh
+# Run with: sudo bash install_hid_udev.sh
 
 set -e
 
@@ -9,7 +9,7 @@ RULES_FILE="$SCRIPT_DIR/99-hidraw.rules"
 TARGET="/etc/udev/rules.d/99-hidraw.rules"
 
 if [ "$EUID" -ne 0 ]; then
-    echo "Please run with sudo: sudo bash install_udev.sh"
+    echo "Please run with sudo: sudo bash install_hid_udev.sh"
     exit 1
 fi
 

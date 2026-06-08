@@ -206,7 +206,7 @@ std::vector<SimpleCommKitHidDeviceInfo> SimpleCommKitHid::get_Device_List()
 // Callbacks
 //
 void SimpleCommKitHid::set_Callback_On_Read(
-    std::function<void(const std::vector<uint8_t>& data)> on_read)
+    std::function<void(const SimpleCommKitHidDeviceInfo&, const std::vector<uint8_t>&)> on_read)
 {
     if (d_ptr) d_ptr->setCallbackOnRead(std::move(on_read));
 }

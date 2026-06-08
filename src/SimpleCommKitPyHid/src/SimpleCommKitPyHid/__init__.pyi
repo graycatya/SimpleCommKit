@@ -122,8 +122,8 @@ class SimpleCommKitHid:
         ...
 
     # --- Callbacks ---
-    def set_callback_on_read(self, callback: Callable[[bytes], None]) -> None:
-        """Set callback for incoming read data (receives bytes)."""
+    def set_callback_on_read(self, callback: Callable[[bytes, str], None]) -> None:
+        """Set callback for incoming read data (receives bytes, device_path)."""
         ...
 
     def set_callback_on_hotplug(self, callback: Callable[[List[HidDeviceInfo], List[HidDeviceInfo]], None]) -> None:

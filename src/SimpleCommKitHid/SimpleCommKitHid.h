@@ -127,7 +127,8 @@ public:
     // Callbacks
     //
     void set_Callback_On_Read(
-        std::function<void(const std::vector<uint8_t>& data)> on_read);
+        std::function<void(const SimpleCommKitHidDeviceInfo& device_info,
+                           const std::vector<uint8_t>& data)> on_read);
     void set_Callback_On_HotPlug(
         std::function<void(const std::vector<SimpleCommKitHidDeviceInfo>& added,
                            const std::vector<SimpleCommKitHidDeviceInfo>& removed)> on_hotplug);

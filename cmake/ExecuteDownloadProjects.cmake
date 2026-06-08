@@ -1,11 +1,12 @@
 set(PROJECT_NAMES "CSerialPort" 
                     "simpleble"
                     "hidapi"
-                    "mongoose"
+                    # "mongoose"
                     "libusb-cmake"
-                    "libuv"
-                    "openssl-cmake"
-                    "uSockets"
+                    # "libuv"
+                    # "openssl-cmake"
+                    # "uSockets"
+                    "libhv"
                     "pybind11")
 
 
@@ -35,6 +36,9 @@ set(uSockets_URL "https://github.com/uNetworking/uSockets/archive/refs/tags/v${u
 
 set(pybind11_VERSION_TAG "3.0.4")
 set(pybind11_URL "https://github.com/pybind/pybind11/archive/refs/tags/v${pybind11_VERSION_TAG}.zip")
+
+set(libhv_VERSION_TAG "1.3.4")
+set(libhv_URL "https://github.com/ithewei/libhv/archive/refs/tags/v${libhv_VERSION_TAG}.zip")
 
 
 foreach(PROJ_NAME IN LISTS PROJECT_NAMES)

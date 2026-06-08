@@ -59,7 +59,7 @@ class HidState:
         """Register a read callback that buffers data for this path."""
         hid = self._ensure_hid()
 
-        def read_callback(data: bytes) -> None:
+        def read_callback(data: bytes, device_path: str) -> None:
             if path not in self._read_buffer:
                 self._read_buffer[path] = []
             self._read_buffer[path].append({

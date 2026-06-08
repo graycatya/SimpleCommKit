@@ -98,7 +98,8 @@ public:
     //
     // Callbacks
     //
-    void setCallbackOnRead(std::function<void(const std::vector<uint8_t>&)> callback);
+    void setCallbackOnRead(std::function<void(const SimpleCommKitHidDeviceInfo&,
+                                              const std::vector<uint8_t>&)> callback);
     void setCallbackOnHotPlug(std::function<void(const std::vector<SimpleCommKitHidDeviceInfo>&,
                                                   const std::vector<SimpleCommKitHidDeviceInfo>&)> callback);
     void setCallbackError(std::function<void(SimpleCommKit::ErrorCode)> callback);
@@ -154,7 +155,8 @@ private:
     std::atomic<int>  m_defaultReadDataLength{64};
 
     // Callbacks
-    std::function<void(const std::vector<uint8_t>&)> m_onRead;
+    std::function<void(const SimpleCommKitHidDeviceInfo&,
+                       const std::vector<uint8_t>&)> m_onRead;
     std::function<void(SimpleCommKit::ErrorCode)> m_onError;
 };
 

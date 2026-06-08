@@ -22,7 +22,7 @@ if devices:
         print(f"Opened: {devices[0].path}")
 
     # Set read callback
-    hid.set_callback_on_read(lambda data: print(f"Read {len(data)} bytes: {data.hex()}"))
+    hid.set_callback_on_read(lambda data, path: print(f"Read {len(data)} bytes: {data.hex()}"))
 
     # Write a report
     report = bytes([0x00, 0x01, 0x02, 0x03])
