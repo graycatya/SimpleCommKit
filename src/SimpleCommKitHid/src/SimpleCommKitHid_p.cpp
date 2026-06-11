@@ -304,7 +304,7 @@ bool SimpleCommKitHidPrivate::open(const std::string& path, bool readable)
         }
 
 #ifdef _WIN32
-        HidD_SetNumInputBuffers(*static_cast<HANDLE*>(handle), 9);
+        HidD_SetNumInputBuffers(*reinterpret_cast<HANDLE*>(handle), 9);
 #endif
 
         // Use non-blocking mode — hid_read_timeout handles the wait
@@ -366,7 +366,7 @@ bool SimpleCommKitHidPrivate::open(unsigned short vendor_id,
         }
 
 #ifdef _WIN32
-        HidD_SetNumInputBuffers(*static_cast<HANDLE*>(handle), 9);
+        HidD_SetNumInputBuffers(*reinterpret_cast<HANDLE*>(handle), 9);
 #endif
 
         hid_set_nonblocking(handle, 1);

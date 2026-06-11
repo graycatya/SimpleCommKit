@@ -15,6 +15,7 @@ enum class ModuleID : uint8_t {
     SimpleCommKitBle = 0,         // Bluetooth module
     SimpleCommKitSerialPort = 1,  // Serial Port module
     SimpleCommKitHid = 2,         // HID module
+    SimpleCommKitUsb = 3,         // USB module
     SimpleCommKitMaxModule = 0xFF
 };
 
@@ -76,6 +77,25 @@ namespace ErrorCodes {
     constexpr ErrorCode SimpleCommKitHidFeatureReportError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitHid, ErrorType::SimpleCommKitError, 0, 8);
     constexpr ErrorCode SimpleCommKitHidHotplugError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitHid, ErrorType::SimpleCommKitError, 0, 9);
     constexpr ErrorCode SimpleCommKitHidEnumerateError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitHid, ErrorType::SimpleCommKitError, 0, 10);
+
+    // SimpleCommKitUsb module error codes
+    constexpr ErrorCode SimpleCommKitUsbSuccess = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitSuccess, 0, 0);
+    constexpr ErrorCode SimpleCommKitUsbInitError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 1);
+    constexpr ErrorCode SimpleCommKitUsbExitError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 2);
+    constexpr ErrorCode SimpleCommKitUsbOpenError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 3);
+    constexpr ErrorCode SimpleCommKitUsbCloseError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 4);
+    constexpr ErrorCode SimpleCommKitUsbNotOpenError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 5);
+    constexpr ErrorCode SimpleCommKitUsbReadError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 6);
+    constexpr ErrorCode SimpleCommKitUsbWriteError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 7);
+    constexpr ErrorCode SimpleCommKitUsbControlTransferError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 8);
+    constexpr ErrorCode SimpleCommKitUsbBulkTransferError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 9);
+    constexpr ErrorCode SimpleCommKitUsbInterruptTransferError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 10);
+    constexpr ErrorCode SimpleCommKitUsbClaimInterfaceError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 11);
+    constexpr ErrorCode SimpleCommKitUsbReleaseInterfaceError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 12);
+    constexpr ErrorCode SimpleCommKitUsbHotplugError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 13);
+    constexpr ErrorCode SimpleCommKitUsbEnumerateError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 14);
+    constexpr ErrorCode SimpleCommKitUsbIsochronousTransferError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 15);
+    constexpr ErrorCode SimpleCommKitUsbGetConfigError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 16);
 }
 
 // Error code resolver (replaces the original ErrorUtil)
@@ -149,6 +169,24 @@ inline const std::unordered_map<ErrorCode, std::string> SimpleCommKitErrorMap::e
     {ErrorCodes::SimpleCommKitHidFeatureReportError, "SimpleCommKitHid feature report error"},
     {ErrorCodes::SimpleCommKitHidHotplugError, "SimpleCommKitHid hotplug error"},
     {ErrorCodes::SimpleCommKitHidEnumerateError, "SimpleCommKitHid enumerate error"},
+
+    {ErrorCodes::SimpleCommKitUsbSuccess, "SimpleCommKitUsb success"},
+    {ErrorCodes::SimpleCommKitUsbInitError, "SimpleCommKitUsb init error"},
+    {ErrorCodes::SimpleCommKitUsbExitError, "SimpleCommKitUsb exit error"},
+    {ErrorCodes::SimpleCommKitUsbOpenError, "SimpleCommKitUsb open error"},
+    {ErrorCodes::SimpleCommKitUsbCloseError, "SimpleCommKitUsb close error"},
+    {ErrorCodes::SimpleCommKitUsbNotOpenError, "SimpleCommKitUsb device not open error"},
+    {ErrorCodes::SimpleCommKitUsbReadError, "SimpleCommKitUsb read error"},
+    {ErrorCodes::SimpleCommKitUsbWriteError, "SimpleCommKitUsb write error"},
+    {ErrorCodes::SimpleCommKitUsbControlTransferError, "SimpleCommKitUsb control transfer error"},
+    {ErrorCodes::SimpleCommKitUsbBulkTransferError, "SimpleCommKitUsb bulk transfer error"},
+    {ErrorCodes::SimpleCommKitUsbInterruptTransferError, "SimpleCommKitUsb interrupt transfer error"},
+    {ErrorCodes::SimpleCommKitUsbClaimInterfaceError, "SimpleCommKitUsb claim interface error"},
+    {ErrorCodes::SimpleCommKitUsbReleaseInterfaceError, "SimpleCommKitUsb release interface error"},
+    {ErrorCodes::SimpleCommKitUsbHotplugError, "SimpleCommKitUsb hotplug error"},
+    {ErrorCodes::SimpleCommKitUsbEnumerateError, "SimpleCommKitUsb enumerate error"},
+    {ErrorCodes::SimpleCommKitUsbIsochronousTransferError, "SimpleCommKitUsb isochronous transfer error"},
+    {ErrorCodes::SimpleCommKitUsbGetConfigError, "SimpleCommKitUsb get config descriptor error"},
 
 };
 

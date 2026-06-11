@@ -1,0 +1,3 @@
+# Test dependencies for SimpleCommKitAiUsb
+pytest>=7.0
+httpx

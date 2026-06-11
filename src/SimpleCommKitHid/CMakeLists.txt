@@ -42,12 +42,14 @@ if(NOT WIN32 AND NOT APPLE AND CMAKE_SYSTEM_NAME MATCHES "Linux")
         target_link_libraries(${PROJECT_NAME} PUBLIC hidapi::libusb)
     endif()
 else()
-    target_link_libraries(${PROJECT_NAME} PUBLIC hidapi::hidapi)
+    target_link_libraries(${PROJECT_NAME} PUBLIC hidapi::hidapi
+                                                    hid)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
     SimpleCommKitUtil
 )
+
 
 
 

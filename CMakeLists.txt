@@ -33,6 +33,7 @@ option(SIMPLECOMMKIT_EXAMPLES "SimpleCommKit Build all modules examples" OFF)
 option(SIMPLECOMMKITBLE_EXAMPLES "SimpleCommKitBle Examples" OFF)
 option(SIMPLECOMMKITSERIALPORT_EXAMPLES "SimpleCommKitSerialPort Examples" OFF)
 option(SIMPLECOMMKITHID_EXAMPLES "SimpleCommKitHid Examples" OFF)
+option(SIMPLECOMMKITUSB_EXAMPLES "SimpleCommKitUsb Examples" OFF)
 option(ENABLE_SIMPLECOMMKITPYBIND "Enable SimpleCommKitPyBind" OFF)
 
 
@@ -104,10 +105,11 @@ set(SRC_MODULES
     SimpleCommKitBle
     SimpleCommKitSerialPort
     SimpleCommKitHid
+    SimpleCommKitUsb
 )
 
 if(ENABLE_SIMPLECOMMKITPYBIND)
-    list(APPEND SRC_MODULES SimpleCommKitPyBle SimpleCommKitPySerialPort SimpleCommKitPyHid)
+    list(APPEND SRC_MODULES SimpleCommKitPyBle SimpleCommKitPySerialPort SimpleCommKitPyHid SimpleCommKitPyUsb)
 endif()
 
 
@@ -117,6 +119,7 @@ set(MODULE_EXAMPLES_MAPPING
     SimpleCommKitBle:SimpleCommKitBleCentralExample
     SimpleCommKitSerialPort:SimpleCommKitSerialPortExample
     SimpleCommKitHid:SimpleCommKitHidExample
+    SimpleCommKitUsb:SimpleCommKitUsbExample
 )
 
 
