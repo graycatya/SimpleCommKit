@@ -8,7 +8,7 @@ Provides:
 - HTTP Server: REST API for remote USB device control
 """
 
-__version__ = "0.1.0"
+from SimpleCommKitPyUsb import __version__
 
 try:
     from SimpleCommKitPyUsb import (

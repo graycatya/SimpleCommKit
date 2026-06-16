@@ -1,0 +1,20 @@
+"""
+SimpleCommKitAiTcpServer - AI-friendly TCP server toolkit powered by SimpleCommKitPyTcp
+
+Exposes TCP server operations as MCP tools and REST API for AI agents and scripts.
+"""
+
+from SimpleCommKitPyTcp import __version__
+
+try:
+    from SimpleCommKitPyTcp import (
+        TcpServer,
+        TlsSetting,
+        get_error_description,
+    )
+except ImportError:
+    TcpServer = None       # type: ignore
+    TlsSetting = None      # type: ignore
+    get_error_description = lambda code: f"Unknown error {code}"  # type: ignore
+
+__all__ = ["__version__", "TcpServer", "TlsSetting", "get_error_description"]

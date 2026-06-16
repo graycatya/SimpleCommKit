@@ -19,7 +19,8 @@ import queue
 import threading
 
 from SimpleCommKitAiSerialPort import (
-    SerialPort,
+from SimpleCommKitAiSerialPort import __version__
+SerialPort,
     SerialPortInfo,
     BaudRate,
     Parity,
@@ -103,7 +104,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SimpleCommKitAiSerialPort API",
     description="REST API to control serial ports using simple_comm_kit_serialport",
-    version="0.1.0",
+    version=__version__,
     lifespan=lifespan,
 )
 

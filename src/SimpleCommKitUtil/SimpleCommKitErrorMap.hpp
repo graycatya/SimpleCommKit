@@ -16,6 +16,10 @@ enum class ModuleID : uint8_t {
     SimpleCommKitSerialPort = 1,  // Serial Port module
     SimpleCommKitHid = 2,         // HID module
     SimpleCommKitUsb = 3,         // USB module
+    SimpleCommKitTcp = 4,         // TCP module
+    SimpleCommKitUdp = 5,         // UDP module
+    SimpleCommKitWebSocket = 6,   // WebSocket module
+    SimpleCommKitMqtt = 7,         // MQTT module
     SimpleCommKitMaxModule = 0xFF
 };
 
@@ -96,6 +100,51 @@ namespace ErrorCodes {
     constexpr ErrorCode SimpleCommKitUsbEnumerateError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 14);
     constexpr ErrorCode SimpleCommKitUsbIsochronousTransferError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 15);
     constexpr ErrorCode SimpleCommKitUsbGetConfigError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUsb, ErrorType::SimpleCommKitError, 0, 16);
+
+    // SimpleCommKitTcp module error codes
+    constexpr ErrorCode SimpleCommKitTcpSuccess             = MAKE_ERROR_CODE(ModuleID::SimpleCommKitTcp, ErrorType::SimpleCommKitSuccess, 0, 0);
+    constexpr ErrorCode SimpleCommKitTcpConnectError        = MAKE_ERROR_CODE(ModuleID::SimpleCommKitTcp, ErrorType::SimpleCommKitError, 0, 1);
+    constexpr ErrorCode SimpleCommKitTcpDisconnectError     = MAKE_ERROR_CODE(ModuleID::SimpleCommKitTcp, ErrorType::SimpleCommKitError, 0, 2);
+    constexpr ErrorCode SimpleCommKitTcpNotConnectedError   = MAKE_ERROR_CODE(ModuleID::SimpleCommKitTcp, ErrorType::SimpleCommKitError, 0, 3);
+    constexpr ErrorCode SimpleCommKitTcpSendError           = MAKE_ERROR_CODE(ModuleID::SimpleCommKitTcp, ErrorType::SimpleCommKitError, 0, 4);
+    constexpr ErrorCode SimpleCommKitTcpStartError          = MAKE_ERROR_CODE(ModuleID::SimpleCommKitTcp, ErrorType::SimpleCommKitError, 0, 5);
+    constexpr ErrorCode SimpleCommKitTcpStopError           = MAKE_ERROR_CODE(ModuleID::SimpleCommKitTcp, ErrorType::SimpleCommKitError, 0, 6);
+    constexpr ErrorCode SimpleCommKitTcpNotRunningError     = MAKE_ERROR_CODE(ModuleID::SimpleCommKitTcp, ErrorType::SimpleCommKitError, 0, 7);
+    constexpr ErrorCode SimpleCommKitTcpBroadcastError      = MAKE_ERROR_CODE(ModuleID::SimpleCommKitTcp, ErrorType::SimpleCommKitError, 0, 8);
+    constexpr ErrorCode SimpleCommKitTcpTlsError            = MAKE_ERROR_CODE(ModuleID::SimpleCommKitTcp, ErrorType::SimpleCommKitError, 0, 9);
+
+    // SimpleCommKitUdp module error codes
+    constexpr ErrorCode SimpleCommKitUdpSuccess            = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUdp, ErrorType::SimpleCommKitSuccess, 0, 0);
+    constexpr ErrorCode SimpleCommKitUdpOpenError          = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUdp, ErrorType::SimpleCommKitError, 0, 1);
+    constexpr ErrorCode SimpleCommKitUdpCloseError         = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUdp, ErrorType::SimpleCommKitError, 0, 2);
+    constexpr ErrorCode SimpleCommKitUdpNotOpenError       = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUdp, ErrorType::SimpleCommKitError, 0, 3);
+    constexpr ErrorCode SimpleCommKitUdpSendError          = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUdp, ErrorType::SimpleCommKitError, 0, 4);
+    constexpr ErrorCode SimpleCommKitUdpStartError         = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUdp, ErrorType::SimpleCommKitError, 0, 5);
+    constexpr ErrorCode SimpleCommKitUdpStopError          = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUdp, ErrorType::SimpleCommKitError, 0, 6);
+    constexpr ErrorCode SimpleCommKitUdpNotRunningError    = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUdp, ErrorType::SimpleCommKitError, 0, 7);
+    constexpr ErrorCode SimpleCommKitUdpBroadcastError     = MAKE_ERROR_CODE(ModuleID::SimpleCommKitUdp, ErrorType::SimpleCommKitError, 0, 8);
+
+    // SimpleCommKitWebSocket module error codes
+    constexpr ErrorCode SimpleCommKitWebSocketSuccess              = MAKE_ERROR_CODE(ModuleID::SimpleCommKitWebSocket, ErrorType::SimpleCommKitSuccess, 0, 0);
+    constexpr ErrorCode SimpleCommKitWebSocketConnectError         = MAKE_ERROR_CODE(ModuleID::SimpleCommKitWebSocket, ErrorType::SimpleCommKitError, 0, 1);
+    constexpr ErrorCode SimpleCommKitWebSocketDisconnectError      = MAKE_ERROR_CODE(ModuleID::SimpleCommKitWebSocket, ErrorType::SimpleCommKitError, 0, 2);
+    constexpr ErrorCode SimpleCommKitWebSocketNotConnectedError    = MAKE_ERROR_CODE(ModuleID::SimpleCommKitWebSocket, ErrorType::SimpleCommKitError, 0, 3);
+    constexpr ErrorCode SimpleCommKitWebSocketSendError            = MAKE_ERROR_CODE(ModuleID::SimpleCommKitWebSocket, ErrorType::SimpleCommKitError, 0, 4);
+    constexpr ErrorCode SimpleCommKitWebSocketStartError           = MAKE_ERROR_CODE(ModuleID::SimpleCommKitWebSocket, ErrorType::SimpleCommKitError, 0, 5);
+    constexpr ErrorCode SimpleCommKitWebSocketStopError            = MAKE_ERROR_CODE(ModuleID::SimpleCommKitWebSocket, ErrorType::SimpleCommKitError, 0, 6);
+    constexpr ErrorCode SimpleCommKitWebSocketNotRunningError      = MAKE_ERROR_CODE(ModuleID::SimpleCommKitWebSocket, ErrorType::SimpleCommKitError, 0, 7);
+    constexpr ErrorCode SimpleCommKitWebSocketBroadcastError       = MAKE_ERROR_CODE(ModuleID::SimpleCommKitWebSocket, ErrorType::SimpleCommKitError, 0, 8);
+    constexpr ErrorCode SimpleCommKitWebSocketTlsError             = MAKE_ERROR_CODE(ModuleID::SimpleCommKitWebSocket, ErrorType::SimpleCommKitError, 0, 9);
+
+    // SimpleCommKitMqtt module error codes
+    constexpr ErrorCode SimpleCommKitMqttSuccess            = MAKE_ERROR_CODE(ModuleID::SimpleCommKitMqtt, ErrorType::SimpleCommKitSuccess, 0, 0);
+    constexpr ErrorCode SimpleCommKitMqttConnectError       = MAKE_ERROR_CODE(ModuleID::SimpleCommKitMqtt, ErrorType::SimpleCommKitError, 0, 1);
+    constexpr ErrorCode SimpleCommKitMqttDisconnectError    = MAKE_ERROR_CODE(ModuleID::SimpleCommKitMqtt, ErrorType::SimpleCommKitError, 0, 2);
+    constexpr ErrorCode SimpleCommKitMqttNotConnectedError  = MAKE_ERROR_CODE(ModuleID::SimpleCommKitMqtt, ErrorType::SimpleCommKitError, 0, 3);
+    constexpr ErrorCode SimpleCommKitMqttPublishError       = MAKE_ERROR_CODE(ModuleID::SimpleCommKitMqtt, ErrorType::SimpleCommKitError, 0, 4);
+    constexpr ErrorCode SimpleCommKitMqttSubscribeError     = MAKE_ERROR_CODE(ModuleID::SimpleCommKitMqtt, ErrorType::SimpleCommKitError, 0, 5);
+    constexpr ErrorCode SimpleCommKitMqttUnsubscribeError   = MAKE_ERROR_CODE(ModuleID::SimpleCommKitMqtt, ErrorType::SimpleCommKitError, 0, 6);
+    constexpr ErrorCode SimpleCommKitMqttTlsError           = MAKE_ERROR_CODE(ModuleID::SimpleCommKitMqtt, ErrorType::SimpleCommKitError, 0, 7);
 }
 
 // Error code resolver (replaces the original ErrorUtil)
@@ -187,6 +236,47 @@ inline const std::unordered_map<ErrorCode, std::string> SimpleCommKitErrorMap::e
     {ErrorCodes::SimpleCommKitUsbEnumerateError, "SimpleCommKitUsb enumerate error"},
     {ErrorCodes::SimpleCommKitUsbIsochronousTransferError, "SimpleCommKitUsb isochronous transfer error"},
     {ErrorCodes::SimpleCommKitUsbGetConfigError, "SimpleCommKitUsb get config descriptor error"},
+
+    {ErrorCodes::SimpleCommKitTcpSuccess, "SimpleCommKitTcp success"},
+    {ErrorCodes::SimpleCommKitTcpConnectError, "SimpleCommKitTcp connect error"},
+    {ErrorCodes::SimpleCommKitTcpDisconnectError, "SimpleCommKitTcp disconnect error"},
+    {ErrorCodes::SimpleCommKitTcpNotConnectedError, "SimpleCommKitTcp not connected error"},
+    {ErrorCodes::SimpleCommKitTcpSendError, "SimpleCommKitTcp send error"},
+    {ErrorCodes::SimpleCommKitTcpStartError, "SimpleCommKitTcp start error"},
+    {ErrorCodes::SimpleCommKitTcpStopError, "SimpleCommKitTcp stop error"},
+    {ErrorCodes::SimpleCommKitTcpNotRunningError, "SimpleCommKitTcp server not running error"},
+    {ErrorCodes::SimpleCommKitTcpBroadcastError, "SimpleCommKitTcp broadcast error"},
+    {ErrorCodes::SimpleCommKitTcpTlsError, "SimpleCommKitTcp TLS error"},
+
+    {ErrorCodes::SimpleCommKitUdpSuccess, "SimpleCommKitUdp success"},
+    {ErrorCodes::SimpleCommKitUdpOpenError, "SimpleCommKitUdp open error"},
+    {ErrorCodes::SimpleCommKitUdpCloseError, "SimpleCommKitUdp close error"},
+    {ErrorCodes::SimpleCommKitUdpNotOpenError, "SimpleCommKitUdp not open error"},
+    {ErrorCodes::SimpleCommKitUdpSendError, "SimpleCommKitUdp send error"},
+    {ErrorCodes::SimpleCommKitUdpStartError, "SimpleCommKitUdp start error"},
+    {ErrorCodes::SimpleCommKitUdpStopError, "SimpleCommKitUdp stop error"},
+    {ErrorCodes::SimpleCommKitUdpNotRunningError, "SimpleCommKitUdp server not running error"},
+    {ErrorCodes::SimpleCommKitUdpBroadcastError, "SimpleCommKitUdp broadcast error"},
+
+    {ErrorCodes::SimpleCommKitWebSocketSuccess, "SimpleCommKitWebSocket success"},
+    {ErrorCodes::SimpleCommKitWebSocketConnectError, "SimpleCommKitWebSocket connect error"},
+    {ErrorCodes::SimpleCommKitWebSocketDisconnectError, "SimpleCommKitWebSocket disconnect error"},
+    {ErrorCodes::SimpleCommKitWebSocketNotConnectedError, "SimpleCommKitWebSocket not connected error"},
+    {ErrorCodes::SimpleCommKitWebSocketSendError, "SimpleCommKitWebSocket send error"},
+    {ErrorCodes::SimpleCommKitWebSocketStartError, "SimpleCommKitWebSocket start error"},
+    {ErrorCodes::SimpleCommKitWebSocketStopError, "SimpleCommKitWebSocket stop error"},
+    {ErrorCodes::SimpleCommKitWebSocketNotRunningError, "SimpleCommKitWebSocket server not running error"},
+    {ErrorCodes::SimpleCommKitWebSocketBroadcastError, "SimpleCommKitWebSocket broadcast error"},
+    {ErrorCodes::SimpleCommKitWebSocketTlsError, "SimpleCommKitWebSocket TLS error"},
+
+    {ErrorCodes::SimpleCommKitMqttSuccess, "SimpleCommKitMqtt success"},
+    {ErrorCodes::SimpleCommKitMqttConnectError, "SimpleCommKitMqtt connect error"},
+    {ErrorCodes::SimpleCommKitMqttDisconnectError, "SimpleCommKitMqtt disconnect error"},
+    {ErrorCodes::SimpleCommKitMqttNotConnectedError, "SimpleCommKitMqtt not connected error"},
+    {ErrorCodes::SimpleCommKitMqttPublishError, "SimpleCommKitMqtt publish error"},
+    {ErrorCodes::SimpleCommKitMqttSubscribeError, "SimpleCommKitMqtt subscribe error"},
+    {ErrorCodes::SimpleCommKitMqttUnsubscribeError, "SimpleCommKitMqtt unsubscribe error"},
+    {ErrorCodes::SimpleCommKitMqttTlsError, "SimpleCommKitMqtt TLS error"},
 
 };
 

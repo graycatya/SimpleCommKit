@@ -1,0 +1,15 @@
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "simple-comm-kit-tcp"
+dynamic = ["version"]
+description = "SimpleCommKitPyTcp - Python bindings for SimpleCommKit TCP C++ library"
+requires-python = ">=3.8"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {file = "../../VERSION"}

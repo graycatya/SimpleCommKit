@@ -8,9 +8,10 @@ Provides:
 - HTTP Server: REST API for remote serial port control
 """
 
-__version__ = "0.1.0"
-
 # Re-export core SerialPort types from simple_comm_kit_serialport for convenience
+
+from SimpleCommKitPySerialPort import __version__
+
 try:
     from SimpleCommKitPySerialPort import (
         SerialPort,

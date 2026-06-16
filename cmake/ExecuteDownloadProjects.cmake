@@ -1,11 +1,7 @@
 set(PROJECT_NAMES "CSerialPort" 
                     "simpleble"
                     "hidapi"
-                    # "mongoose"
                     "libusb-cmake"
-                    # "libuv"
-                    # "openssl-cmake"
-                    # "uSockets"
                     "libhv"
                     "pybind11")
 
@@ -19,20 +15,11 @@ set(simpleble_URL "https://github.com/simpleble/simpleble/archive/refs/tags/v${s
 set(hidapi_VERSION_TAG "hidapi-0.15.0")
 set(hidapi_URL "https://github.com/libusb/hidapi/archive/refs/tags/${hidapi_VERSION_TAG}.zip")
 
-set(mongoose_VERSION_TAG "7.20")
-set(mongoose_URL "https://github.com/cesanta/mongoose/archive/refs/tags/${mongoose_VERSION_TAG}.zip")
-
 set(libusb-cmake_VERSION_TAG "1.0.29-0")
 set(libusb-cmake_URL "https://github.com/libusb/libusb-cmake/archive/refs/tags/v${libusb-cmake_VERSION_TAG}.zip")
 
 set(libuv_VERSION_TAG "1.52.0")
 set(libuv_URL "https://github.com/libuv/libuv/archive/refs/tags/v${libuv_VERSION_TAG}.zip")
-
-set(openssl-cmake_VERSION_TAG "1.1.1w-20250419")
-set(openssl-cmake_URL "https://github.com/janbar/openssl-cmake/archive/refs/tags/${openssl-cmake_VERSION_TAG}.zip")
-
-set(uSockets_VERSION_TAG "0.8.8")
-set(uSockets_URL "https://github.com/uNetworking/uSockets/archive/refs/tags/v${uSockets_VERSION_TAG}.zip")
 
 set(pybind11_VERSION_TAG "3.0.4")
 set(pybind11_URL "https://github.com/pybind/pybind11/archive/refs/tags/v${pybind11_VERSION_TAG}.zip")

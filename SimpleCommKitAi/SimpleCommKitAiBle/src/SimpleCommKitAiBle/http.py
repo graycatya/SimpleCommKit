@@ -19,8 +19,7 @@ import queue
 import threading
 
 from SimpleCommKitAiBle import BleCentral, Adapter, Peripheral, get_error_description
-
-
+from SimpleCommKitAiBle import __version__
 class BleState:
     """Holds global BLE state shared across endpoints."""
 
@@ -139,7 +138,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SimpleCommKitAiBle API",
     description="REST API to control BLE devices using SimpleCommKitPyBle",
-    version="0.1.0",
+    version=__version__,
     lifespan=lifespan,
 )
 

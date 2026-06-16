@@ -6,7 +6,7 @@ import pytest
 def test_package_import():
     """Test that the package can be imported."""
     import SimpleCommKitAiHid
-    assert SimpleCommKitAiHid.__version__ == "0.1.0"
+    assert SimpleCommKitAiHid.__version__ is not None  # version from VERSION file
 
 
 def test_http_module_import(mock_hid_module):

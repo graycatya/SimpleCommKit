@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "SimpleCommKitAiSerialPort"
-version = "0.1.0"
+dynamic = ["version"]
 description = "SimpleCommKitAiSerialPort - AI-friendly Serial Port toolkit (MCP server & REST API) powered by simple_comm_kit_serialport."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -49,3 +49,6 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"
+
+[tool.setuptools.dynamic]
+version = {file = "../../VERSION"}

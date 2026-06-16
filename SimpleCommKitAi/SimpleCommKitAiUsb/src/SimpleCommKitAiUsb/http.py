@@ -20,6 +20,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 
 from SimpleCommKitPyUsb import (
+from SimpleCommKitAiUsb import __version__
     SimpleCommKitUsb,
     UsbDeviceInfo,
     get_error_description,
@@ -120,7 +121,7 @@ class UsbState:
 
 
 state = UsbState()
-app = FastAPI(title="SimpleCommKitAiUsb HTTP API", version="0.1.0")
+app = FastAPI(title="SimpleCommKitAiUsb HTTP API", version=__version__)
 
 
 def _parse_hex(s: str) -> int:
@@ -292,7 +293,7 @@ async def hotplug_status():
 
 def main():
     import argparse
-    parser = argparse.ArgumentParser(description="SimpleCommKitAiUsb HTTP Server")
+parser = argparse.ArgumentParser(description="SimpleCommKitAiUsb HTTP Server")
     parser.add_argument("--host", default="0.0.0.0")
     parser.add_argument("--port", type=int, default=8000)
     parser.add_argument("--log-level", default="info")

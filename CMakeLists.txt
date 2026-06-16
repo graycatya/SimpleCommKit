@@ -3,7 +3,20 @@ set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 禁用编译器特定的扩展（可选，推荐开启以保证跨平台兼容性）
 set(CMAKE_CXX_EXTENSIONS OFF)
-project(SimpleCommKit LANGUAGES C CXX)
+
+# ============================================================================
+# 统一版本号管理 — 读取根目录 VERSION 文件作为唯一版本来源
+# ============================================================================
+if(EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/VERSION")
+    file(READ "${CMAKE_CURRENT_SOURCE_DIR}/VERSION" SIMPLECOMMKIT_VERSION)
+    string(STRIP "${SIMPLECOMMKIT_VERSION}" SIMPLECOMMKIT_VERSION)
+    message(STATUS "SimpleCommKit version: ${SIMPLECOMMKIT_VERSION}")
+else()
+    set(SIMPLECOMMKIT_VERSION "0.0.0")
+    message(WARNING "VERSION file not found, using default: ${SIMPLECOMMKIT_VERSION}")
+endif()
+
+project(SimpleCommKit VERSION ${SIMPLECOMMKIT_VERSION} LANGUAGES C CXX)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
 elseif (UNIX)
@@ -34,14 +47,21 @@ option(SIMPLECOMMKITBLE_EXAMPLES "SimpleCommKitBle Examples" OFF)
 option(SIMPLECOMMKITSERIALPORT_EXAMPLES "SimpleCommKitSerialPort Examples" OFF)
 option(SIMPLECOMMKITHID_EXAMPLES "SimpleCommKitHid Examples" OFF)
 option(SIMPLECOMMKITUSB_EXAMPLES "SimpleCommKitUsb Examples" OFF)
+option(SIMPLECOMMKITTCP_EXAMPLES "SimpleCommKitTcp Examples" OFF)
+option(SIMPLECOMMKITUDP_EXAMPLES "SimpleCommKitUdp Examples" OFF)
+option(SIMPLECOMMKITWEBSOCKET_EXAMPLES "SimpleCommKitWebSocket Examples" OFF)
+option(SIMPLECOMMKITMQTTCLIENT_EXAMPLES "SimpleCommKitMqtt Examples" OFF)
 option(ENABLE_SIMPLECOMMKITPYBIND "Enable SimpleCommKitPyBind" OFF)
+
+# Enable MQTT in libhv (off by default in libhv's CMakeLists.txt)
+set(WITH_MQTT ON CACHE BOOL "Enable MQTT protocol in libhv" FORCE)
 
 
 option(ENABLE_PROXY "Enable proxy for network requests" OFF)
 set(DEFAULT_HTTP_PROXY "" CACHE STRING "Default HTTP proxy URL")
 set(DEFAULT_HTTPS_PROXY "" CACHE STRING "Default HTTPS proxy URL")
-set(WITH_APPS OFF CACHE INTERNAL "openssl-cmake Not Build applications")
 set(BUILD_SHARED_LIBS  OFF CACHE INTERNAL "3rdparty libraries build type")
+
 
 if(ENABLE_PROXY)
     if(DEFINED HTTP_PROXY OR DEFINED HTTPS_PROXY)
@@ -84,6 +104,7 @@ include(DownloadUnzipProject)
 include(ExecuteDownloadProjects)
 
 
+
 set(3RDPARTY_ZIPS
     simpleble
     libusb-cmake
@@ -100,16 +121,31 @@ set(IS_CUSTOM_BUILDS_PROJECT
   
 )
 
+# ============================================================================
+# 从 VERSION 文件生成 C++ 版本头文件
+# ============================================================================
+configure_file(
+    "${SRC_MODULES_PATH}/SimpleCommKitUtil/SimpleCommKitVersion.h.in"
+    "${CMAKE_BINARY_DIR}/generated/SimpleCommKitVersion.h"
+    @ONLY
+)
+# 将生成目录添加到 include 路径，所有模块均可 #include <SimpleCommKitVersion.h>
+include_directories("${CMAKE_BINARY_DIR}/generated")
+
 set(SRC_MODULES
     SimpleCommKitUtil
     SimpleCommKitBle
     SimpleCommKitSerialPort
     SimpleCommKitHid
     SimpleCommKitUsb
+    SimpleCommKitTcp
+    SimpleCommKitUdp
+    SimpleCommKitWebSocket
+    SimpleCommKitMqttClient
 )
 
 if(ENABLE_SIMPLECOMMKITPYBIND)
-    list(APPEND SRC_MODULES SimpleCommKitPyBle SimpleCommKitPySerialPort SimpleCommKitPyHid SimpleCommKitPyUsb)
+    list(APPEND SRC_MODULES SimpleCommKitPyBle SimpleCommKitPySerialPort SimpleCommKitPyHid SimpleCommKitPyUsb SimpleCommKitPyTcp SimpleCommKitPyUdp SimpleCommKitPyWebSocket SimpleCommKitPyMqttClient)
 endif()
 
 
@@ -120,6 +156,13 @@ set(MODULE_EXAMPLES_MAPPING
     SimpleCommKitSerialPort:SimpleCommKitSerialPortExample
     SimpleCommKitHid:SimpleCommKitHidExample
     SimpleCommKitUsb:SimpleCommKitUsbExample
+    SimpleCommKitTcp:SimpleCommKitTcpClientExample
+    SimpleCommKitTcp:SimpleCommKitTcpServerExample
+    SimpleCommKitUdp:SimpleCommKitUdpClientExample
+    SimpleCommKitUdp:SimpleCommKitUdpServerExample
+    SimpleCommKitWebSocket:SimpleCommKitWebSocketClientExample
+    SimpleCommKitWebSocket:SimpleCommKitWebSocketServerExample
+    SimpleCommKitMqttClient:SimpleCommKitMqttClientExample
 )
 
 

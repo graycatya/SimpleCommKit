@@ -8,9 +8,10 @@ Provides:
 - HTTP Server: REST API for remote HID device control
 """
 
-__version__ = "0.1.0"
-
 # Re-export core HID types from SimpleCommKitPyHid for convenience
+
+from SimpleCommKitPyHid import __version__
+
 try:
     from SimpleCommKitPyHid import (
         SimpleCommKitHid,

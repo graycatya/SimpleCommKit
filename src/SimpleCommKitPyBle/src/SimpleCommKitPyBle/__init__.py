@@ -37,6 +37,10 @@ import os as _os
 import sys as _sys
 
 # Register package directory for DLL loading (needed for Windows)
+
+from ._SimpleCommKitPyBle import get_version
+__version__ = get_version()
+
 _pkg_dir = _os.path.dirname(_os.path.abspath(__file__))
 if _sys.platform == "win32" and _os.path.isdir(_pkg_dir):
     try:
@@ -61,7 +65,6 @@ from ._SimpleCommKitPyBle import (
     BleCentral,
 )
 
-__version__ = "0.1.0"
 __all__ = [
     "get_error_description",
     "PeripheralAddressType",

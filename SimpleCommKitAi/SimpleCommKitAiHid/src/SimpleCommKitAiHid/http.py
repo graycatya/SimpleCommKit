@@ -19,8 +19,7 @@ import queue
 import threading
 
 from SimpleCommKitAiHid import SimpleCommKitHid, HidDeviceInfo, HidBusType, get_error_description
-
-
+from SimpleCommKitAiHid import __version__
 class HidState:
     """Holds global HID state shared across endpoints."""
 
@@ -101,7 +100,7 @@ async def lifespan(app: FastAPI):
 app = FastAPI(
     title="SimpleCommKitAiHid API",
     description="REST API to control HID devices using SimpleCommKitPyHid",
-    version="0.1.0",
+    version=__version__,
     lifespan=lifespan,
 )
 

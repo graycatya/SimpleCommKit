@@ -8,9 +8,10 @@ Provides:
 - HTTP Server: REST API for remote BLE device control
 """
 
-__version__ = "0.1.0"
-
 # Re-export core BLE types from SimpleCommKitPyBle for convenience
+
+from SimpleCommKitPyBle import __version__
+
 try:
     from SimpleCommKitPyBle import (
         BleCentral,

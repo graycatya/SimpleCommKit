@@ -2,7 +2,7 @@
 def test_package_import():
     """Test that the package can be imported."""
     import SimpleCommKitAiUsb
-    assert SimpleCommKitAiUsb.__version__ == "0.1.0"
+    assert SimpleCommKitAiUsb.__version__ is not None  # version from VERSION file
 
 
 def test_submodules_import():

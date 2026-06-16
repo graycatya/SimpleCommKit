@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "SimpleCommKitAiUsb"
-version = "0.1.0"
+dynamic = ["version"]
 description = "SimpleCommKitAiUsb - AI-friendly USB toolkit (MCP server & REST API) powered by SimpleCommKitPyUsb."
 readme = "README.md"
 requires-python = ">=3.8"
@@ -47,3 +47,6 @@ testpaths = ["tests"]
 pythonpath = ["src"]
 python_files = ["test_*.py"]
 addopts = "-v --tb=short"
+
+[tool.setuptools.dynamic]
+version = {file = "../../VERSION"}

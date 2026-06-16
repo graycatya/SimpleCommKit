@@ -42,7 +42,7 @@ def main():
 
     def test_package_import():
         import SimpleCommKitAiBle
-        assert SimpleCommKitAiBle.__version__ == "0.1.0"
+        assert SimpleCommKitAiBle.__version__ is not None  # version from VERSION file
 
     if run_test("Import package", test_package_import):
         passed += 1

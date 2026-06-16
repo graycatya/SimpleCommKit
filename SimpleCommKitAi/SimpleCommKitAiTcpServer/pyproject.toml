@@ -1,0 +1,52 @@
+[build-system]
+requires = ["setuptools>=42"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "SimpleCommKitAiTcpServer"
+dynamic = ["version"]
+description = "SimpleCommKitAiTcpServer - AI-friendly TCP server toolkit (MCP server & REST API) powered by SimpleCommKitPyTcp."
+readme = "README.md"
+requires-python = ">=3.8"
+authors = [{ name = "SimpleCommKit Team" }]
+urls = { Homepage = "https://github.com/catgrayprj/SimpleCommKit" }
+keywords = ["tcp", "server", "networking", "mcp", "ai", "simplecommkit"]
+classifiers = [
+    "Operating System :: Microsoft :: Windows",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3 :: Only",
+]
+dependencies = [
+    "fastmcp",
+    "fastapi",
+    "uvicorn",
+    "pydantic",
+]
+
+[project.optional-dependencies]
+test = [
+    "pytest>=7.0",
+    "httpx",
+]
+
+[project.scripts]
+simplecommkitaictcpserver-mcp = "SimpleCommKitAiTcpServer.mcp:main"
+simplecommkitaictcpserver-http = "SimpleCommKitAiTcpServer.http:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["src"]
+python_files = ["test_*.py"]
+addopts = "-v --tb=short"
+
+[tool.setuptools.dynamic]
+version = {file = "../../VERSION"}

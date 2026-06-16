@@ -6,6 +6,7 @@
 
 #include <SimpleCommKitBleCentral.h>
 #include <SimpleCommKitErrorMap.hpp>
+#include <SimpleCommKitVersion.h>
 
 namespace py = pybind11;
 using namespace SimpleCommKit;
@@ -426,6 +427,10 @@ PYBIND11_MODULE(_SimpleCommKitPyBle, m) {
     m.def("get_error_description", &SimpleCommKitErrorMap::GetErrorDescription,
           py::arg("error_code"),
           "Get a human-readable description for an error code.");
+
+    m.def("get_version", []() {
+        return SIMPLECOMMKIT_VERSION;
+    }, "Get the SimpleCommKit library version string.");
 
     // Wrap types
     wrap_enums(m);
