@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.19)
-set(CMAKE_CXX_STANDARD 20)
+set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # 禁用编译器特定的扩展（可选，推荐开启以保证跨平台兼容性）
 set(CMAKE_CXX_EXTENSIONS OFF)
@@ -43,15 +43,8 @@ message(STATUS "------------------------------------------------------------ ")
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 option(SIMPLECOMMKIT_BUILD_SHARED_LIBS "SimpleCommKit Build shared libraries" OFF)
 option(SIMPLECOMMKIT_EXAMPLES "SimpleCommKit Build all modules examples" OFF)
-option(SIMPLECOMMKITBLE_EXAMPLES "SimpleCommKitBle Examples" OFF)
-option(SIMPLECOMMKITSERIALPORT_EXAMPLES "SimpleCommKitSerialPort Examples" OFF)
-option(SIMPLECOMMKITHID_EXAMPLES "SimpleCommKitHid Examples" OFF)
-option(SIMPLECOMMKITUSB_EXAMPLES "SimpleCommKitUsb Examples" OFF)
-option(SIMPLECOMMKITTCP_EXAMPLES "SimpleCommKitTcp Examples" OFF)
-option(SIMPLECOMMKITUDP_EXAMPLES "SimpleCommKitUdp Examples" OFF)
-option(SIMPLECOMMKITWEBSOCKET_EXAMPLES "SimpleCommKitWebSocket Examples" OFF)
-option(SIMPLECOMMKITMQTTCLIENT_EXAMPLES "SimpleCommKitMqtt Examples" OFF)
 option(ENABLE_SIMPLECOMMKITPYBIND "Enable SimpleCommKitPyBind" OFF)
+option(ENABLE_SIMPLECOMMKITAI_FASTMCPP "Enable SimpleCommKitAiFastmcpp" OFF)
 
 # Enable MQTT in libhv (off by default in libhv's CMakeLists.txt)
 set(WITH_MQTT ON CACHE BOOL "Enable MQTT protocol in libhv" FORCE)
@@ -99,6 +92,7 @@ set(3RDPARTY_ZIP_PATH ${CMAKE_CURRENT_SOURCE_DIR}/3rdparty-download)
 set(BUILDSCRIPTS_PATH ${CMAKE_CURRENT_SOURCE_DIR}/buildscripts)
 set(SIMPLECOMMKIT_INSTALL_DIR ${CMAKE_BINARY_DIR}/install) 
 set(SIMPLECOMMKIT_EXAMPLES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/examples)
+set(SIMPLECOMMKITAI_FASTMCPP_PATH ${CMAKE_CURRENT_SOURCE_DIR}/SimpleCommKitAi)
 
 include(DownloadUnzipProject)
 include(ExecuteDownloadProjects)
@@ -111,6 +105,7 @@ set(3RDPARTY_ZIPS
     CSerialPort
     hidapi
     libhv
+    fastmcpp
 )
 
 if(ENABLE_SIMPLECOMMKITPYBIND)
@@ -149,7 +144,19 @@ if(ENABLE_SIMPLECOMMKITPYBIND)
 endif()
 
 
-
+set(SIMPLECOMMKITAI_FASTMCPP_MAPPING
+    SimpleCommKitHid:SimpleCommKitAiHidFastmcpp
+    SimpleCommKitBle:SimpleCommKitAiBleFastmcpp
+    SimpleCommKitMqttClient:SimpleCommKitAiMqttClientFastmcpp
+    SimpleCommKitSerialPort:SimpleCommKitAiSerialPortFastmcpp
+    SimpleCommKitTcp:SimpleCommKitAiTcpClientFastmcpp
+    SimpleCommKitTcp:SimpleCommKitAiTcpServerFastmcpp
+    SimpleCommKitUdp:SimpleCommKitAiUdpClientFastmcpp
+    SimpleCommKitUdp:SimpleCommKitAiUdpServerFastmcpp
+    SimpleCommKitUsb:SimpleCommKitAiUsbFastmcpp
+    SimpleCommKitWebSocket:SimpleCommKitAiWebSocketClientFastmcpp
+    SimpleCommKitWebSocket:SimpleCommKitAiWebSocketServerFastmcpp
+)
 
 set(MODULE_EXAMPLES_MAPPING
     SimpleCommKitBle:SimpleCommKitBleCentralExample
@@ -204,29 +211,45 @@ if(SIMPLECOMMKIT_EXAMPLES)
     message(STATUS "Building all module examples (SIMPLECOMMKIT_EXAMPLES=ON)")
 
     foreach(MAPPING ${MODULE_EXAMPLES_MAPPING})
-        # 解析模块名和examples目录名
-        string(REPLACE ":" ";" MAPPING_LIST ${MAPPING})
-        list(GET MAPPING_LIST 0 MODULE_NAME)
-        list(GET MAPPING_LIST 1 EXAMPLES_DIR)
-        string(TOUPPER ${MODULE_NAME} MODULE_NAME_UPPER)
+      # 解析模块名和examples目录名
+      string(REPLACE ":" ";" MAPPING_LIST ${MAPPING})
+      list(GET MAPPING_LIST 0 MODULE_NAME)
+      list(GET MAPPING_LIST 1 EXAMPLES_DIR)
+      string(TOUPPER ${MODULE_NAME} MODULE_NAME_UPPER)
 
-        # 构建对应的option变量名
-        set(EXAMPLE_OPTION "${MODULE_NAME_UPPER}_EXAMPLES")
 
-        # 检查examples目录是否存在
-        if(${EXAMPLE_OPTION})
-            set(EXAMPLE_PATH "${SIMPLECOMMKIT_EXAMPLES_PATH}/${MODULE_NAME}/${EXAMPLES_DIR}")
-            if(EXISTS "${EXAMPLE_PATH}" AND IS_DIRECTORY "${EXAMPLE_PATH}")
-                message(STATUS " Building ${EXAMPLES_DIR} example...")
-                add_subdirectory(${EXAMPLE_PATH})
-            else()
-                message(STATUS " Skipping ${MODULE_NAME} examples (no examples directory)")
-            endif()
-        else()
-            message(STATUS " Skipping ${MODULE_NAME} examples (${EXAMPLE_OPTION}=OFF)")
-        endif()
+      set(EXAMPLE_PATH "${SIMPLECOMMKIT_EXAMPLES_PATH}/${MODULE_NAME}/${EXAMPLES_DIR}")
+      if(EXISTS "${EXAMPLE_PATH}" AND IS_DIRECTORY "${EXAMPLE_PATH}")
+          message(STATUS " Building ${EXAMPLES_DIR} example...")
+          add_subdirectory(${EXAMPLE_PATH})
+      else()
+          message(STATUS " Skipping ${MODULE_NAME} examples (no examples directory)")
+      endif()
+
     endforeach()
     message(STATUS "============================================================")
 endif()
 
+
+if(ENABLE_SIMPLECOMMKITAI_FASTMCPP)
+    message(STATUS "============================================================")
+    message(STATUS "Building all simplecommkitai fastmcpp(ENABLE_SIMPLECOMMKITAI_FASTMCPP=ON)")
+        foreach(MAPPING ${SIMPLECOMMKITAI_FASTMCPP_MAPPING})
+
+        string(REPLACE ":" ";" MAPPING_LIST ${MAPPING})
+        list(GET MAPPING_LIST 0 MODULE_NAME)
+        list(GET MAPPING_LIST 1 MODULE_DIR)
+        string(TOUPPER ${MODULE_NAME} MODULE_NAME_UPPER)
+
+        set(MODULE_PATH "${SIMPLECOMMKITAI_FASTMCPP_PATH}/${MODULE_DIR}")
+        if(EXISTS "${MODULE_PATH}" AND IS_DIRECTORY "${MODULE_PATH}")
+            message(STATUS " Building ${MODULE_DIR} fastmcpp...")
+            add_subdirectory(${MODULE_PATH})
+        else()
+            message(STATUS " Skipping ${MODULE_DIR} fastmcpp (no fastmcpp directory)")
+        endif()
+
+    endforeach()
+    message(STATUS "============================================================")
+endif()
 

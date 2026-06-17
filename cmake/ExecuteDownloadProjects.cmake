@@ -3,7 +3,8 @@ set(PROJECT_NAMES "CSerialPort"
                     "hidapi"
                     "libusb-cmake"
                     "libhv"
-                    "pybind11")
+                    "pybind11"
+                    "fastmcpp")
 
 
 set(CSerialPort_VERSION_TAG "4.3.3")
@@ -27,6 +28,8 @@ set(pybind11_URL "https://github.com/pybind/pybind11/archive/refs/tags/v${pybind
 set(libhv_VERSION_TAG "1.3.4")
 set(libhv_URL "https://github.com/ithewei/libhv/archive/refs/tags/v${libhv_VERSION_TAG}.zip")
 
+set(fastmcpp_VERSION_TAG "main")
+set(fastmcpp_URL "https://github.com/0xeb/fastmcpp/archive/refs/heads/${fastmcpp_VERSION_TAG}.zip")
 
 foreach(PROJ_NAME IN LISTS PROJECT_NAMES)
     set(URL_VAR "${PROJ_NAME}_URL")
