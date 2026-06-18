@@ -161,7 +161,7 @@ void wrap_usb(py::module& m) {
                 }
                 int ret = self.bulk_Transfer(endpoint, vec, timeout);
                 if (ret < 0) {
-                    return is_in ? py::bytes() : py::int_(ret);
+                    return is_in ? py::object(py::bytes()) : py::object(py::int_(ret));
                 }
                 if (is_in) {
                     return py::bytes(reinterpret_cast<const char*>(vec.data()),
@@ -192,7 +192,7 @@ void wrap_usb(py::module& m) {
                 }
                 int ret = self.interrupt_Transfer(endpoint, vec, timeout);
                 if (ret < 0) {
-                    return is_in ? py::bytes() : py::int_(ret);
+                    return is_in ? py::object(py::bytes()) : py::object(py::int_(ret));
                 }
                 if (is_in) {
                     return py::bytes(reinterpret_cast<const char*>(vec.data()),

@@ -139,6 +139,15 @@ set(SRC_MODULES
     SimpleCommKitMqttClient
 )
 
+if(ENABLE_SIMPLECOMMKITAI_FASTMCPP)
+    set(FASTMCPP_BUILD_EXAMPLES OFF CACHE BOOL "FASTMCPP_BUILD_EXAMPLES OFF" FORCE)
+    set(FASTMCPP_BUILD_TESTS OFF CACHE BOOL "FASTMCPP_BUILD_TESTS OFF" FORCE)
+else()
+    list(REMOVE_ITEM 3RDPARTY_ZIPS
+        fastmcpp
+    )
+endif()
+
 if(ENABLE_SIMPLECOMMKITPYBIND)
     list(APPEND SRC_MODULES SimpleCommKitPyBle SimpleCommKitPySerialPort SimpleCommKitPyHid SimpleCommKitPyUsb SimpleCommKitPyTcp SimpleCommKitPyUdp SimpleCommKitPyWebSocket SimpleCommKitPyMqttClient)
 endif()

@@ -4,6 +4,8 @@
 [![C++](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://en.cppreference.com/w/cpp/17)
 [![Platform](https://img.shields.io/badge/platform-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20iOS%20%7C%20Android-lightgrey.svg)]()
 
+[中文文档](README_CN.md)
+
 **SimpleCommKit** is a cross-platform C++ communication library that unifies multiple low-level communication protocols under a clean, consistent API — so you never worry about platform-specific implementation details.
 
 ---

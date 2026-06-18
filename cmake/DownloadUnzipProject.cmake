@@ -44,8 +44,22 @@ function(download_and_unzip)
     get_filename_component(zip_dir "${DU_ZIP_SAVE_PATH}" DIRECTORY)
     file(MAKE_DIRECTORY "${zip_dir}")
 
-    # 2. Download compressed package (自定义重试逻辑，兼容低版本CMake)
-    if(NOT EXISTS "${DU_ZIP_SAVE_PATH}")
+    # 2. 下载压缩包（自定义重试逻辑，兼容低版本 CMake）
+    #    增加下载后文件有效性校验，避免下载到损坏/不完整的文件
+    set(need_download TRUE)
+    if(EXISTS "${DU_ZIP_SAVE_PATH}")
+        # 已存在的文件检查是否有效（大小 > 1KB，排除空文件/HTML 错误页）
+        file(SIZE "${DU_ZIP_SAVE_PATH}" existing_size)
+        if(existing_size GREATER 1024)
+            message(STATUS "${DU_PROJECT_NAME} ${DU_PROJECT_VERSION} package already exists, skip downloading")
+            set(need_download FALSE)
+        else()
+            message(WARNING "${DU_PROJECT_NAME} ${DU_PROJECT_VERSION} existing package is too small (${existing_size} bytes), re-downloading...")
+            file(REMOVE "${DU_ZIP_SAVE_PATH}")
+        endif()
+    endif()
+
+    if(need_download)
         set(download_success FALSE)
         set(retry_count 0)
         
@@ -68,8 +82,16 @@ function(download_and_unzip)
             list(GET download_status 1 status_msg)
             
             if(status_code EQUAL 0)
-                set(download_success TRUE)
-                message(STATUS "${DU_PROJECT_NAME} ${DU_PROJECT_VERSION} downloaded successfully: ${DU_ZIP_SAVE_PATH}")
+                # 校验下载的文件大小，防止下载到错误页面
+                file(SIZE "${DU_ZIP_SAVE_PATH}" file_size)
+                if(file_size GREATER 1024)
+                    set(download_success TRUE)
+                    message(STATUS "${DU_PROJECT_NAME} ${DU_PROJECT_VERSION} downloaded successfully: ${DU_ZIP_SAVE_PATH} (${file_size} bytes)")
+                else()
+                    message(WARNING "Downloaded file is too small (${file_size} bytes), likely an error page or empty file. Retrying...")
+                    math(EXPR retry_count "${retry_count} + 1")
+                    file(REMOVE "${DU_ZIP_SAVE_PATH}")
+                endif()
             else()
                 math(EXPR retry_count "${retry_count} + 1")
                 if(retry_count LESS ${DU_DOWNLOAD_RETRY})
@@ -84,25 +106,45 @@ function(download_and_unzip)
             file(REMOVE "${DU_ZIP_SAVE_PATH}")
             message(FATAL_ERROR "Download failed after ${DU_DOWNLOAD_RETRY} attempts! Last error: ${status_code} - ${status_msg}")
         endif()
-    else()
-        message(STATUS "${DU_PROJECT_NAME} ${DU_PROJECT_VERSION} package already exists, skip downloading")
     endif()
     
 
     if(NOT EXISTS "${DU_UNZIP_TARGET_DIR}/${DU_RENAME_TO}")
         file(MAKE_DIRECTORY "${DU_UNZIP_TARGET_DIR}")
         message(STATUS "Extracting ${DU_PROJECT_NAME} ${DU_PROJECT_VERSION} ...")
-        if(WIN32)
 
+        # 根据平台和文件类型选择解压工具
+        # macOS/Linux 上使用系统 unzip 避免 cmake -E tar 的 UTF-8 locale 转换问题
+        # 同时设置 LANG=en_US.UTF-8 确保能正确处理 zip 中的非 ASCII 文件名
+        get_filename_component(zip_ext "${DU_ZIP_SAVE_PATH}" LAST_EXT)
+        if(zip_ext STREQUAL ".zip" AND NOT WIN32)
+            find_program(UNZIP_EXECUTABLE unzip)
+            if(UNZIP_EXECUTABLE)
+                if(APPLE)
+                    # macOS 上 ditto 对多字节文件名支持最好
+                    find_program(DITTO_EXECUTABLE ditto)
+                    if(DITTO_EXECUTABLE)
+                        set(tar_command ${DITTO_EXECUTABLE} -xk "${DU_ZIP_SAVE_PATH}" .)
+                    else()
+                        set(tar_command ${UNZIP_EXECUTABLE} -o "${DU_ZIP_SAVE_PATH}")
+                    endif()
+                else()
+                    set(tar_command ${UNZIP_EXECUTABLE} -o "${DU_ZIP_SAVE_PATH}")
+                endif()
+            else()
+                # 回退到 cmake -E tar
+                set(tar_command ${CMAKE_COMMAND} -E tar xzf "${DU_ZIP_SAVE_PATH}")
+            endif()
+        elseif(WIN32)
             set(tar_command ${CMAKE_COMMAND} -E tar xf "${DU_ZIP_SAVE_PATH}")
         else()
-
             set(tar_command ${CMAKE_COMMAND} -E tar xzf "${DU_ZIP_SAVE_PATH}")
         endif()
 
         # 4. 执行解压并增强错误信息
+        #    用 env 设置 LANG/LC_ALL 为 UTF-8 以处理含非 ASCII 文件名的 zip
         execute_process(
-            COMMAND ${tar_command}
+            COMMAND env LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 ${tar_command}
             WORKING_DIRECTORY "${DU_UNZIP_TARGET_DIR}"
             RESULT_VARIABLE unzip_result
             OUTPUT_VARIABLE unzip_output
@@ -112,7 +154,8 @@ function(download_and_unzip)
         # Check unzip status
         if(NOT unzip_result EQUAL 0)
             file(REMOVE_RECURSE "${DU_UNZIP_TARGET_DIR}") # Clean up residual files on extraction failure
-            message(FATAL_ERROR "Failed to extract ${DU_PROJECT_NAME}! Error code: ${unzip_result}, Error log: ${unzip_error}")
+            file(REMOVE "${DU_ZIP_SAVE_PATH}") # Remove corrupted zip so it will be re-downloaded
+            message(FATAL_ERROR "Failed to extract ${DU_PROJECT_NAME}! Error code: ${unzip_result}, Error log: ${unzip_error}\n  The corrupted zip file has been removed. Please re-run cmake to re-download.")
         endif()
         if(DU_RENAME_TO)
             file(RENAME "${DU_UNZIP_TARGET_DIR}/${DU_PROJECT_NAME}-${DU_PROJECT_VERSION}" "${DU_UNZIP_TARGET_DIR}/${DU_RENAME_TO}")

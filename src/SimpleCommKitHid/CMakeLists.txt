@@ -31,9 +31,11 @@ target_include_directories(${PROJECT_NAME} PUBLIC
     ${CMAKE_CURRENT_SOURCE_DIR}
 )
 
-# hidapi include path (assuming hidapi is provided via find_package or 3rdparty)
-# Adjust HIDAPI_INCLUDE_DIR or use find_package(hidapi) as appropriate
-find_package(hidapi QUIET)
+# hidapi is built as 3rdparty, targets are available from add_subdirectory
+# Platform-specific linking:
+#   - Linux: hidapi::hidraw (and optionally hidapi::libusb)
+#   - Windows: hidapi::hidapi + hid (system HID library)
+#   - macOS/iOS: hidapi::hidapi (already links IOKit/CoreFoundation)
 if(NOT WIN32 AND NOT APPLE AND CMAKE_SYSTEM_NAME MATCHES "Linux")
     if(TARGET hidapi::hidraw)
         target_link_libraries(${PROJECT_NAME} PUBLIC hidapi::hidraw)
@@ -41,9 +43,10 @@ if(NOT WIN32 AND NOT APPLE AND CMAKE_SYSTEM_NAME MATCHES "Linux")
     if(TARGET hidapi::libusb)
         target_link_libraries(${PROJECT_NAME} PUBLIC hidapi::libusb)
     endif()
+elseif(WIN32)
+    target_link_libraries(${PROJECT_NAME} PUBLIC hidapi::hidapi hid)
 else()
-    target_link_libraries(${PROJECT_NAME} PUBLIC hidapi::hidapi
-                                                    hid)
+    target_link_libraries(${PROJECT_NAME} PUBLIC hidapi::hidapi)
 endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC
