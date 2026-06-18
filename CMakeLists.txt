@@ -45,9 +45,15 @@ option(SIMPLECOMMKIT_BUILD_SHARED_LIBS "SimpleCommKit Build shared libraries" OF
 option(SIMPLECOMMKIT_EXAMPLES "SimpleCommKit Build all modules examples" OFF)
 option(ENABLE_SIMPLECOMMKITPYBIND "Enable SimpleCommKitPyBind" OFF)
 option(ENABLE_SIMPLECOMMKITAI_FASTMCPP "Enable SimpleCommKitAiFastmcpp" OFF)
-
-# Enable MQTT in libhv (off by default in libhv's CMakeLists.txt)
-set(WITH_MQTT ON CACHE BOOL "Enable MQTT protocol in libhv" FORCE)
+option(ENABLE_SIMPLECOMMKIT_BLE "Enable SimpleCommKitBle" OFF)
+option(ENABLE_SIMPLECOMMKIT_HID "Enable SimpleCommKitHid" OFF)
+option(ENABLE_SIMPLECOMMKIT_USB "Enable SimpleCommKitUsb" OFF)
+option(ENABLE_SIMPLECOMMKIT_SERIALPORT "Enable SimpleCommKitSerialPort" OFF)
+option(ENABLE_SIMPLECOMMKIT_TCP "Enable SimpleCommKitTcp" ON)
+option(ENABLE_SIMPLECOMMKIT_UDP "Enable SimpleCommKitUdp" ON)
+option(ENABLE_SIMPLECOMMKIT_WEBSOCKET "Enable SimpleCommKitWebSocket" ON)
+option(ENABLE_SIMPLECOMMKIT_MQTTCLIENT "Enable SimpleCommKitMqttClient" OFF)
+option(WITH_SIMPLECOMMKIT_OPENSSL "Enable OpenSSL" OFF)
 
 
 option(ENABLE_PROXY "Enable proxy for network requests" OFF)
@@ -113,7 +119,7 @@ if(ENABLE_SIMPLECOMMKITPYBIND)
 endif()
 
 set(IS_CUSTOM_BUILDS_PROJECT
-  
+  # Currently, there is none.
 )
 
 # ============================================================================
@@ -121,11 +127,11 @@ set(IS_CUSTOM_BUILDS_PROJECT
 # ============================================================================
 configure_file(
     "${SRC_MODULES_PATH}/SimpleCommKitUtil/SimpleCommKitVersion.h.in"
-    "${CMAKE_BINARY_DIR}/generated/SimpleCommKitVersion.h"
+    "${CMAKE_BINARY_DIR}/include/SimpleCommKitVersion.h"
     @ONLY
 )
 # 将生成目录添加到 include 路径，所有模块均可 #include <SimpleCommKitVersion.h>
-include_directories("${CMAKE_BINARY_DIR}/generated")
+include_directories("${CMAKE_BINARY_DIR}/include")
 
 set(SRC_MODULES
     SimpleCommKitUtil
@@ -149,7 +155,16 @@ else()
 endif()
 
 if(ENABLE_SIMPLECOMMKITPYBIND)
-    list(APPEND SRC_MODULES SimpleCommKitPyBle SimpleCommKitPySerialPort SimpleCommKitPyHid SimpleCommKitPyUsb SimpleCommKitPyTcp SimpleCommKitPyUdp SimpleCommKitPyWebSocket SimpleCommKitPyMqttClient)
+    list(APPEND SRC_MODULES
+                            SimpleCommKitPyBle
+                            SimpleCommKitPySerialPort
+                            SimpleCommKitPyHid
+                            SimpleCommKitPyUsb
+                            SimpleCommKitPyTcp
+                            SimpleCommKitPyUdp
+                            SimpleCommKitPyWebSocket
+                            SimpleCommKitPyMqttClient
+                          )
 endif()
 
 
@@ -183,17 +198,215 @@ set(MODULE_EXAMPLES_MAPPING
 
 
 if(CMAKE_SYSTEM_NAME MATCHES "IOS")
+    set(ENABLE_SIMPLECOMMKIT_SERIALPORT OFF CACHE BOOL "ENABLE_SIMPLECOMMKIT_SERIALPORT OFF" FORCE)
+    set(ENABLE_SIMPLECOMMKIT_HID OFF CACHE BOOL "ENABLE_SIMPLECOMMKIT_HID OFF" FORCE)
+    set(ENABLE_SIMPLECOMMKIT_USB OFF CACHE BOOL "ENABLE_SIMPLECOMMKIT_USB OFF" FORCE)
+endif()
+
+if(ENABLE_SIMPLECOMMKIT_BLE)
+else()
     list(REMOVE_ITEM 3RDPARTY_ZIPS
-        libusb-cmake
-        CSerialPort
-        hidapi
+        simpleble
     )
-    list(REMOVE_ITEM ENABLE_SIMPLECOMMKITPYBIND
-        SimpleCommKitPySerialPort
-        SimpleCommKitPyHid
+    list(REMOVE_ITEM SRC_MODULES
+        SimpleCommKitBle
+        SimpleCommKitPyBle
+    )
+    list(REMOVE_ITEM SIMPLECOMMKITAI_FASTMCPP_MAPPING
+        SimpleCommKitBle:SimpleCommKitAiBleFastmcpp
+    )
+    list(REMOVE_ITEM MODULE_EXAMPLES_MAPPING
+        SimpleCommKitBle:SimpleCommKitBleCentralExample
     )
 endif()
 
+if(ENABLE_SIMPLECOMMKIT_HID)
+    set(ENABLE_SIMPLECOMMKIT_USB ON CACHE BOOL "ENABLE_SIMPLECOMMKIT_USB ON" FORCE)
+else()
+    list(REMOVE_ITEM 3RDPARTY_ZIPS
+        hidapi
+    )
+    list(REMOVE_ITEM SRC_MODULES
+        SimpleCommKitHid
+        SimpleCommKitPyHid
+    )
+    list(REMOVE_ITEM SIMPLECOMMKITAI_FASTMCPP_MAPPING
+        SimpleCommKitHid:SimpleCommKitAiHidFastmcpp
+    )
+    list(REMOVE_ITEM MODULE_EXAMPLES_MAPPING
+        SimpleCommKitHid:SimpleCommKitHidExample
+    )
+endif()
+
+if(ENABLE_SIMPLECOMMKIT_USB)
+else()
+    list(REMOVE_ITEM 3RDPARTY_ZIPS
+        libusb-cmake
+    )
+    list(REMOVE_ITEM SRC_MODULES
+        SimpleCommKitUsb
+        SimpleCommKitPyUsb
+    )
+    list(REMOVE_ITEM SIMPLECOMMKITAI_FASTMCPP_MAPPING
+        SimpleCommKitUsb:SimpleCommKitAiUsbFastmcpp
+    )
+    list(REMOVE_ITEM MODULE_EXAMPLES_MAPPING
+        SimpleCommKitUsb:SimpleCommKitUsbExample
+    )
+endif()
+
+if(ENABLE_SIMPLECOMMKIT_SERIALPORT)
+else()
+    list(REMOVE_ITEM 3RDPARTY_ZIPS
+        CSerialPort
+    )
+    list(REMOVE_ITEM SRC_MODULES
+        SimpleCommKitSerialPort
+        SimpleCommKitPySerialPort
+    )
+    list(REMOVE_ITEM SIMPLECOMMKITAI_FASTMCPP_MAPPING
+        SimpleCommKitSerialPort:SimpleCommKitAiSerialPortFastmcpp
+    )
+    list(REMOVE_ITEM MODULE_EXAMPLES_MAPPING
+        SimpleCommKitSerialPort:SimpleCommKitSerialPortExample
+    )
+endif()
+
+if(ENABLE_SIMPLECOMMKIT_TCP AND
+   ENABLE_SIMPLECOMMKIT_UDP AND
+   ENABLE_SIMPLECOMMKIT_WEBSOCKET AND
+   ENABLE_SIMPLECOMMKIT_MQTTCLIENT)
+else()
+    list(REMOVE_ITEM 3RDPARTY_ZIPS
+        libhv
+    )
+endif()
+
+if(ENABLE_SIMPLECOMMKIT_TCP)
+else()
+    list(REMOVE_ITEM SRC_MODULES
+        SimpleCommKitTcp
+        SimpleCommKitPyTcp
+    )
+    list(REMOVE_ITEM SIMPLECOMMKITAI_FASTMCPP_MAPPING
+      SimpleCommKitTcp:SimpleCommKitAiTcpClientFastmcpp
+      SimpleCommKitTcp:SimpleCommKitAiTcpServerFastmcpp
+    )
+    list(REMOVE_ITEM MODULE_EXAMPLES_MAPPING
+      SimpleCommKitTcp:SimpleCommKitTcpClientExample
+      SimpleCommKitTcp:SimpleCommKitTcpServerExample
+    )
+endif()
+
+if(ENABLE_SIMPLECOMMKIT_UDP)
+else()
+    list(REMOVE_ITEM SRC_MODULES
+        SimpleCommKitUdp
+        SimpleCommKitPyUdp
+    )
+    list(REMOVE_ITEM SIMPLECOMMKITAI_FASTMCPP_MAPPING
+      SimpleCommKitUdp:SimpleCommKitAiUdpClientFastmcpp
+      SimpleCommKitUdp:SimpleCommKitAiUdpServerFastmcpp
+    )
+    list(REMOVE_ITEM MODULE_EXAMPLES_MAPPING
+      SimpleCommKitUdp:SimpleCommKitUdpClientExample
+      SimpleCommKitUdp:SimpleCommKitUdpServerExample
+    )
+endif()
+
+
+if(ENABLE_SIMPLECOMMKIT_WEBSOCKET)
+else()
+    list(REMOVE_ITEM SRC_MODULES
+        SimpleCommKitWebSocket
+        SimpleCommKitPyWebSocket
+    )
+    list(REMOVE_ITEM SIMPLECOMMKITAI_FASTMCPP_MAPPING
+      SimpleCommKitWebSocket:SimpleCommKitAiWebSocketClientFastmcpp
+      SimpleCommKitWebSocket:SimpleCommKitAiWebSocketServerFastmcpp
+    )
+    list(REMOVE_ITEM MODULE_EXAMPLES_MAPPING
+      SimpleCommKitWebSocket:SimpleCommKitWebSocketClientExample
+      SimpleCommKitWebSocket:SimpleCommKitWebSocketServerExample
+    )
+endif()
+
+
+if(ENABLE_SIMPLECOMMKIT_MQTTCLIENT)
+    set(WITH_MQTT ON CACHE BOOL "Enable MQTT protocol in libhv" FORCE)
+else()
+    list(REMOVE_ITEM SRC_MODULES
+        SimpleCommKitMqttClient
+        SimpleCommKitPyMqttClient
+    )
+    list(REMOVE_ITEM SIMPLECOMMKITAI_FASTMCPP_MAPPING
+        SimpleCommKitMqttClient:SimpleCommKitAiMqttClientFastmcpp
+    )
+    list(REMOVE_ITEM MODULE_EXAMPLES_MAPPING
+        SimpleCommKitMqttClient:SimpleCommKitMqttClientExample
+    )
+endif()
+
+if(WITH_SIMPLECOMMKIT_OPENSSL)
+    set(WITH_OPENSSL ON CACHE BOOL "WITH_OPENSSL ON" FORCE)
+    set(FASTMCPP_ENABLE_OPENSSL ON CACHE BOOL "FASTMCPP_ENABLE_OPENSSL ON" FORCE)
+else()
+    set(WITH_OPENSSL OFF CACHE BOOL "WITH_OPENSSL OFF" FORCE)
+    set(FASTMCPP_ENABLE_OPENSSL OFF CACHE BOOL "FASTMCPP_ENABLE_OPENSSL OFF" FORCE)
+endif()
+
+# ============================================================================
+# Install public headers to build include dir & generate umbrella SimpleCommKit.h
+# ============================================================================
+
+# 1. Copy SimpleCommKitUtil public headers to build include directory
+configure_file(
+    "${SRC_MODULES_PATH}/SimpleCommKitUtil/SimpleCommKitErrorMap.hpp"
+    "${CMAKE_BINARY_DIR}/include/SimpleCommKitErrorMap.hpp"
+    COPYONLY
+)
+configure_file(
+    "${SRC_MODULES_PATH}/SimpleCommKitUtil/SimpleCommKitExport.h"
+    "${CMAKE_BINARY_DIR}/include/SimpleCommKitExport.h"
+    COPYONLY
+)
+
+# 2. Module → public header filename mapping
+set(SIMPLE_COMMKIT_MODULE_HEADER_MAP
+    SimpleCommKitBle:SimpleCommKitBleCentral.h
+    SimpleCommKitHid:SimpleCommKitHid.h
+    SimpleCommKitUsb:SimpleCommKitUsb.h
+    SimpleCommKitSerialPort:SimpleCommKitSerialPort.h
+    SimpleCommKitTcp:SimpleCommKitTcp.h
+    SimpleCommKitUdp:SimpleCommKitUdp.h
+    SimpleCommKitWebSocket:SimpleCommKitWebSocket.h
+    SimpleCommKitMqttClient:SimpleCommKitMqttClient.h
+)
+
+# 3. Build module includes string and copy headers for enabled modules
+set(SIMPLE_COMMKIT_MODULE_INCLUDES "")
+
+foreach(MAPPING ${SIMPLE_COMMKIT_MODULE_HEADER_MAP})
+    string(REPLACE ":" ";" MAPPING_LIST ${MAPPING})
+    list(GET MAPPING_LIST 0 MODULE)
+    list(GET MAPPING_LIST 1 HEADER)
+
+    if("${MODULE}" IN_LIST SRC_MODULES)
+        configure_file(
+            "${SRC_MODULES_PATH}/${MODULE}/${HEADER}"
+            "${CMAKE_BINARY_DIR}/include/${HEADER}"
+            COPYONLY
+        )
+        string(APPEND SIMPLE_COMMKIT_MODULE_INCLUDES "\n#include <${HEADER}>")
+    endif()
+endforeach()
+
+# 4. Generate umbrella SimpleCommKit.h
+configure_file(
+    "${SRC_MODULES_PATH}/SimpleCommKit.h.in"
+    "${CMAKE_BINARY_DIR}/include/SimpleCommKit.h"
+    @ONLY
+)
 
 foreach(3RDPARTY ${3RDPARTY_ZIPS})
     if("${3RDPARTY}" IN_LIST IS_CUSTOM_BUILDS_PROJECT)

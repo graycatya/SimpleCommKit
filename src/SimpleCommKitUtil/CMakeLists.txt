@@ -28,8 +28,8 @@ target_compile_features(${MODULE_NAME} INTERFACE cxx_std_17)
 install(FILES SimpleCommKitErrorMap.hpp
     DESTINATION include/${MODULE_NAME}
 )
-# Install the generated version header (built by root CMakeLists.txt)
-install(FILES ${CMAKE_BINARY_DIR}/generated/SimpleCommKitVersion.h
+# Install the include version header (built by root CMakeLists.txt)
+install(FILES ${CMAKE_BINARY_DIR}/include/SimpleCommKitVersion.h
     DESTINATION include/${MODULE_NAME}
 )
 
