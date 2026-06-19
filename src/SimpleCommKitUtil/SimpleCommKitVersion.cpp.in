@@ -1,0 +1,23 @@
+#include <SimpleCommKitVersion.h>
+
+namespace SimpleCommKit {
+
+// ---- 版本号宏（仅库内部可见，由 CMake configure_file 生成）----
+#define SIMPLECOMMKIT_VERSION       "@SIMPLECOMMKIT_VERSION@"
+#define SIMPLECOMMKIT_VERSION_MAJOR @PROJECT_VERSION_MAJOR@
+#define SIMPLECOMMKIT_VERSION_MINOR @PROJECT_VERSION_MINOR@
+#define SIMPLECOMMKIT_VERSION_PATCH @PROJECT_VERSION_PATCH@
+
+const char* getSimpleCommKitVersion() {
+    return SIMPLECOMMKIT_VERSION;
+}
+
+SimpleCommKitVersion getSimpleCommKitVersionInfo() {
+    SimpleCommKitVersion v;
+    v.major = SIMPLECOMMKIT_VERSION_MAJOR;
+    v.minor = SIMPLECOMMKIT_VERSION_MINOR;
+    v.patch = SIMPLECOMMKIT_VERSION_PATCH;
+    return v;
+}
+
+} // namespace SimpleCommKit

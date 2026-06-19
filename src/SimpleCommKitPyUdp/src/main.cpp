@@ -189,9 +189,8 @@ PYBIND11_MODULE(_SimpleCommKitPyUdp, m) {
           py::arg("error_code"),
           "Get a human-readable description for an error code.");
 
-    m.def("get_version", []() {
-        return SIMPLECOMMKIT_VERSION;
-    }, "Get the SimpleCommKit library version string.");
+    m.def("get_version", &SimpleCommKit::getSimpleCommKitVersion,
+        "Get the SimpleCommKit library version string.");
 
     // Wrap classes
     wrap_udp_client(m);

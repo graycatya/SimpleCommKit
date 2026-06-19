@@ -290,9 +290,8 @@ PYBIND11_MODULE(_SimpleCommKitPySerialPort, m) {
           py::arg("error_code"),
           "Get a human-readable description for an error code.");
 
-    m.def("get_version", []() {
-        return SIMPLECOMMKIT_VERSION;
-    }, "Get the SimpleCommKit library version string.");
+    m.def("get_version", &SimpleCommKit::getSimpleCommKitVersion,
+        "Get the SimpleCommKit library version string.");
 
     // Wrap types
     wrap_enums(m);

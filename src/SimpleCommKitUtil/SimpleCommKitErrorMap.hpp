@@ -5,6 +5,8 @@
 #include <unordered_map>
 #include <system_error>
 
+#include <SimpleCommKitExport.h>
+
 namespace SimpleCommKit {
 
 // Define the base type for error codes
@@ -147,137 +149,21 @@ namespace ErrorCodes {
     constexpr ErrorCode SimpleCommKitMqttTlsError           = MAKE_ERROR_CODE(ModuleID::SimpleCommKitMqtt, ErrorType::SimpleCommKitError, 0, 7);
 }
 
-// Error code resolver (replaces the original ErrorUtil)
-class SimpleCommKitErrorMap {
+// Error code resolver — 符号由编译库导出
+class SIMPLECOMMKIT_API SimpleCommKitErrorMap {
 public:
     // Get error code description string
-    static std::string GetErrorDescription(ErrorCode error_code) {
-        auto it = error_descriptions_.find(error_code);
-        if (it != error_descriptions_.end()) {
-            return it->second;
-        }
-        return "Unknown error";
-    }
+    static std::string GetErrorDescription(ErrorCode error_code);
 
     // Resolve module ID from error code
-    static ModuleID ResolveModuleID(ErrorCode error_code) {  // Method name optimized to ResolveXXX
-        return static_cast<ModuleID>((error_code >> 24) & 0xFF);
-    }
+    static ModuleID ResolveModuleID(ErrorCode error_code);
 
     // Resolve error type from error code
-    static ErrorType ResolveErrorType(ErrorCode error_code) {
-        return static_cast<ErrorType>((error_code >> 16) & 0xFF);
-    }
+    static ErrorType ResolveErrorType(ErrorCode error_code);
 
 private:
-    // Error code - description mapping table
+    // Error code - description mapping table（定义于 .cpp）
     static const std::unordered_map<ErrorCode, std::string> error_descriptions_;
 };
 
 } // namespace SimpleCommKit
-
-// Move the definition outside the class and make it inline (C++17)
-namespace SimpleCommKit {
-
-// Initialize error description mapping table
-inline const std::unordered_map<ErrorCode, std::string> SimpleCommKitErrorMap::error_descriptions_ = {
-    {ErrorCodes::SimpleCommKitBleSuccess, "SimpleCommKitBle success"},
-    {ErrorCodes::SimpleCommKitBleGetAdaptersError, "SimpleCommKitBle get adapters error"},
-    {ErrorCodes::SimpleCommKitBleSetAdapterError, "SimpleCommKitBle set adapter error"},
-    {ErrorCodes::SimpleCommKitBleCurrentAdapterNotSet, "SimpleCommKitBle adapter not set error"},
-    {ErrorCodes::SimpleCommKitBleAdapterScanStartError, "SimpleCommKitBle adapter start scan error"},
-    {ErrorCodes::SimpleCommKitBleAdapterScanStopError, "SimpleCommKitBle adapter stop scan error"},
-    {ErrorCodes::SimpleCommKitBleAdapterSetScanTimeoutError, "SimpleCommKitBle adapter set scan timeout error"},
-    {ErrorCodes::SimpleCommKitBleAdapterScanGetResultsError, "SimpleCommKitBle adapter scan get results error"},
-    {ErrorCodes::SimpleCommKitBleAdapterGetPairedPeripheralsError, "SimpleCommKitBle adapter get paired peripherals error"},
-    {ErrorCodes::SimpleCommKitBleAdapterGetConnectedPeripheralsError, "SimpleCommKitBle adapter get connected peripherals error"},
-    {ErrorCodes::SimpleCommKitBleCurrentPeripheralSetError, "SimpleCommKitBle peripheral set error"},
-    {ErrorCodes::SimpleCommKitBleCurrentPeripheralNotSet, "SimpleCommKitBle peripheral not set error"},
-    {ErrorCodes::SimpleCommKitBleCurrentPeripheralSubIndicateError, "SimpleCommKitBle peripheral sub indicate error"},
-    {ErrorCodes::SimpleCommKitBleCurrentPeripheralSubNotifyError, "SimpleCommKitBle peripheral sub notify error"},
-    {ErrorCodes::SimpleCommKitBleCurrentPeripheralUnSubScribeError, "SimpleCommKitBle peripheral unsubscribe error"},
-
-    {ErrorCodes::SimpleCommKitSerialPortSuccess, "SimpleCommKitSerialPort success"},
-    {ErrorCodes::SimpleCommKitSerialPortInitError, "SimpleCommKitSerialPort init error"},
-    {ErrorCodes::SimpleCommKitSerialPortOpenError, "SimpleCommKitSerialPort open error"},
-    {ErrorCodes::SimpleCommKitSerialPortCloseError, "SimpleCommKitSerialPort close error"},
-    {ErrorCodes::SimpleCommKitSerialPortNotOpenError, "SimpleCommKitSerialPort port not open error"},
-    {ErrorCodes::SimpleCommKitSerialPortReadError, "SimpleCommKitSerialPort read error"},
-    {ErrorCodes::SimpleCommKitSerialPortWriteError, "SimpleCommKitSerialPort write error"},
-    {ErrorCodes::SimpleCommKitSerialPortHotPlugError, "SimpleCommKitSerialPort hot plug error"},
-    {ErrorCodes::SimpleCommKitSerialPortFlushError, "SimpleCommKitSerialPort flush error"},
-
-    {ErrorCodes::SimpleCommKitHidSuccess, "SimpleCommKitHid success"},
-    {ErrorCodes::SimpleCommKitHidInitError, "SimpleCommKitHid init error"},
-    {ErrorCodes::SimpleCommKitHidExitError, "SimpleCommKitHid exit error"},
-    {ErrorCodes::SimpleCommKitHidOpenError, "SimpleCommKitHid open error"},
-    {ErrorCodes::SimpleCommKitHidCloseError, "SimpleCommKitHid close error"},
-    {ErrorCodes::SimpleCommKitHidNotOpenError, "SimpleCommKitHid device not open error"},
-    {ErrorCodes::SimpleCommKitHidReadError, "SimpleCommKitHid read error"},
-    {ErrorCodes::SimpleCommKitHidWriteError, "SimpleCommKitHid write error"},
-    {ErrorCodes::SimpleCommKitHidFeatureReportError, "SimpleCommKitHid feature report error"},
-    {ErrorCodes::SimpleCommKitHidHotplugError, "SimpleCommKitHid hotplug error"},
-    {ErrorCodes::SimpleCommKitHidEnumerateError, "SimpleCommKitHid enumerate error"},
-
-    {ErrorCodes::SimpleCommKitUsbSuccess, "SimpleCommKitUsb success"},
-    {ErrorCodes::SimpleCommKitUsbInitError, "SimpleCommKitUsb init error"},
-    {ErrorCodes::SimpleCommKitUsbExitError, "SimpleCommKitUsb exit error"},
-    {ErrorCodes::SimpleCommKitUsbOpenError, "SimpleCommKitUsb open error"},
-    {ErrorCodes::SimpleCommKitUsbCloseError, "SimpleCommKitUsb close error"},
-    {ErrorCodes::SimpleCommKitUsbNotOpenError, "SimpleCommKitUsb device not open error"},
-    {ErrorCodes::SimpleCommKitUsbReadError, "SimpleCommKitUsb read error"},
-    {ErrorCodes::SimpleCommKitUsbWriteError, "SimpleCommKitUsb write error"},
-    {ErrorCodes::SimpleCommKitUsbControlTransferError, "SimpleCommKitUsb control transfer error"},
-    {ErrorCodes::SimpleCommKitUsbBulkTransferError, "SimpleCommKitUsb bulk transfer error"},
-    {ErrorCodes::SimpleCommKitUsbInterruptTransferError, "SimpleCommKitUsb interrupt transfer error"},
-    {ErrorCodes::SimpleCommKitUsbClaimInterfaceError, "SimpleCommKitUsb claim interface error"},
-    {ErrorCodes::SimpleCommKitUsbReleaseInterfaceError, "SimpleCommKitUsb release interface error"},
-    {ErrorCodes::SimpleCommKitUsbHotplugError, "SimpleCommKitUsb hotplug error"},
-    {ErrorCodes::SimpleCommKitUsbEnumerateError, "SimpleCommKitUsb enumerate error"},
-    {ErrorCodes::SimpleCommKitUsbIsochronousTransferError, "SimpleCommKitUsb isochronous transfer error"},
-    {ErrorCodes::SimpleCommKitUsbGetConfigError, "SimpleCommKitUsb get config descriptor error"},
-
-    {ErrorCodes::SimpleCommKitTcpSuccess, "SimpleCommKitTcp success"},
-    {ErrorCodes::SimpleCommKitTcpConnectError, "SimpleCommKitTcp connect error"},
-    {ErrorCodes::SimpleCommKitTcpDisconnectError, "SimpleCommKitTcp disconnect error"},
-    {ErrorCodes::SimpleCommKitTcpNotConnectedError, "SimpleCommKitTcp not connected error"},
-    {ErrorCodes::SimpleCommKitTcpSendError, "SimpleCommKitTcp send error"},
-    {ErrorCodes::SimpleCommKitTcpStartError, "SimpleCommKitTcp start error"},
-    {ErrorCodes::SimpleCommKitTcpStopError, "SimpleCommKitTcp stop error"},
-    {ErrorCodes::SimpleCommKitTcpNotRunningError, "SimpleCommKitTcp server not running error"},
-    {ErrorCodes::SimpleCommKitTcpBroadcastError, "SimpleCommKitTcp broadcast error"},
-    {ErrorCodes::SimpleCommKitTcpTlsError, "SimpleCommKitTcp TLS error"},
-
-    {ErrorCodes::SimpleCommKitUdpSuccess, "SimpleCommKitUdp success"},
-    {ErrorCodes::SimpleCommKitUdpOpenError, "SimpleCommKitUdp open error"},
-    {ErrorCodes::SimpleCommKitUdpCloseError, "SimpleCommKitUdp close error"},
-    {ErrorCodes::SimpleCommKitUdpNotOpenError, "SimpleCommKitUdp not open error"},
-    {ErrorCodes::SimpleCommKitUdpSendError, "SimpleCommKitUdp send error"},
-    {ErrorCodes::SimpleCommKitUdpStartError, "SimpleCommKitUdp start error"},
-    {ErrorCodes::SimpleCommKitUdpStopError, "SimpleCommKitUdp stop error"},
-    {ErrorCodes::SimpleCommKitUdpNotRunningError, "SimpleCommKitUdp server not running error"},
-    {ErrorCodes::SimpleCommKitUdpBroadcastError, "SimpleCommKitUdp broadcast error"},
-
-    {ErrorCodes::SimpleCommKitWebSocketSuccess, "SimpleCommKitWebSocket success"},
-    {ErrorCodes::SimpleCommKitWebSocketConnectError, "SimpleCommKitWebSocket connect error"},
-    {ErrorCodes::SimpleCommKitWebSocketDisconnectError, "SimpleCommKitWebSocket disconnect error"},
-    {ErrorCodes::SimpleCommKitWebSocketNotConnectedError, "SimpleCommKitWebSocket not connected error"},
-    {ErrorCodes::SimpleCommKitWebSocketSendError, "SimpleCommKitWebSocket send error"},
-    {ErrorCodes::SimpleCommKitWebSocketStartError, "SimpleCommKitWebSocket start error"},
-    {ErrorCodes::SimpleCommKitWebSocketStopError, "SimpleCommKitWebSocket stop error"},
-    {ErrorCodes::SimpleCommKitWebSocketNotRunningError, "SimpleCommKitWebSocket server not running error"},
-    {ErrorCodes::SimpleCommKitWebSocketBroadcastError, "SimpleCommKitWebSocket broadcast error"},
-    {ErrorCodes::SimpleCommKitWebSocketTlsError, "SimpleCommKitWebSocket TLS error"},
-
-    {ErrorCodes::SimpleCommKitMqttSuccess, "SimpleCommKitMqtt success"},
-    {ErrorCodes::SimpleCommKitMqttConnectError, "SimpleCommKitMqtt connect error"},
-    {ErrorCodes::SimpleCommKitMqttDisconnectError, "SimpleCommKitMqtt disconnect error"},
-    {ErrorCodes::SimpleCommKitMqttNotConnectedError, "SimpleCommKitMqtt not connected error"},
-    {ErrorCodes::SimpleCommKitMqttPublishError, "SimpleCommKitMqtt publish error"},
-    {ErrorCodes::SimpleCommKitMqttSubscribeError, "SimpleCommKitMqtt subscribe error"},
-    {ErrorCodes::SimpleCommKitMqttUnsubscribeError, "SimpleCommKitMqtt unsubscribe error"},
-    {ErrorCodes::SimpleCommKitMqttTlsError, "SimpleCommKitMqtt TLS error"},
-
-};
-
-}

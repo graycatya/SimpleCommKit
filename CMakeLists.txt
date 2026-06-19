@@ -123,11 +123,18 @@ set(IS_CUSTOM_BUILDS_PROJECT
 )
 
 # ============================================================================
-# 从 VERSION 文件生成 C++ 版本头文件
+# 从 VERSION 文件生成 C++ 版本头文件和实现文件
 # ============================================================================
+# 头文件 — 声明
 configure_file(
     "${SRC_MODULES_PATH}/SimpleCommKitUtil/SimpleCommKitVersion.h.in"
     "${CMAKE_BINARY_DIR}/include/SimpleCommKitVersion.h"
+    @ONLY
+)
+# 实现文件 — 编入 so/dll，支持 ABI 兼容替换后版本号自动更新
+configure_file(
+    "${SRC_MODULES_PATH}/SimpleCommKitUtil/SimpleCommKitVersion.cpp.in"
+    "${CMAKE_BINARY_DIR}/generated/SimpleCommKitVersion.cpp"
     @ONLY
 )
 # 将生成目录添加到 include 路径，所有模块均可 #include <SimpleCommKitVersion.h>
@@ -272,9 +279,9 @@ else()
     )
 endif()
 
-if(ENABLE_SIMPLECOMMKIT_TCP AND
-   ENABLE_SIMPLECOMMKIT_UDP AND
-   ENABLE_SIMPLECOMMKIT_WEBSOCKET AND
+if(ENABLE_SIMPLECOMMKIT_TCP OR
+   ENABLE_SIMPLECOMMKIT_UDP OR
+   ENABLE_SIMPLECOMMKIT_WEBSOCKET OR
    ENABLE_SIMPLECOMMKIT_MQTTCLIENT)
 else()
     list(REMOVE_ITEM 3RDPARTY_ZIPS
