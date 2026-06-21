@@ -108,7 +108,7 @@ SimpleCommKit/
 │   └── SimpleCommKitMqttClient/# MQTT 客户端
 ├── examples/                   # 10+ 完整示例程序
 ├── SimpleCommKitAi/            # AI/FastMCP 集成（可选）
-├── cmake/                      # 自定义 CMake 模块
+├── cmake/                      # 自定义 CMake 模块 & iOS 工具链
 ├── CMakeLists.txt              # 主构建文件
 ├── LICENSE                     # MIT 许可证
 └── VERSION                     # 版本号
@@ -196,6 +196,38 @@ graph TB
     AI_CPP --> FASTMC
     PYBIND --> PYBIND11
 ```
+
+---
+
+## 🔨 构建指南
+
+> 📖 完整构建文档请参阅 **[doc/BUILD.md](doc/BUILD.md)**
+
+**快速开始：**
+
+```bash
+# 默认配置（TCP + UDP + WebSocket）
+cmake -B build
+cmake --build build
+
+# 启用更多模块
+cmake -B build \
+  -DENABLE_SIMPLECOMMKIT_BLE=ON \
+  -DENABLE_SIMPLECOMMKIT_SERIALPORT=ON \
+  -DENABLE_SIMPLECOMMKIT_MQTTCLIENT=ON \
+  -DSIMPLECOMMKIT_EXAMPLES=ON
+cmake --build build
+```
+
+**各平台快速命令：**
+
+| 平台 | 快速命令 |
+|------|----------|
+| **macOS / Linux / Windows** | `cmake -B build && cmake --build build` |
+| **iOS** | `cmake -B build_ios -DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake` |
+| **Android** | `cmake -B build_android -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/...` |
+
+完整指南包含环境要求、全部 CMake 选项、依赖说明、各平台详细配置及常见问题排查，详见 **[doc/BUILD.md](doc/BUILD.md)**。
 
 ---
 

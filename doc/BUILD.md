@@ -294,16 +294,56 @@ cmake --build . --config Release -j$(sysctl -n hw.ncpu)
 
 ### iOS
 
-iOS 下 **串口、HID、USB 模块会自动禁用**，其余模块可正常使用：
+iOS 使用专用工具链 `cmake/ios.toolchain.cmake`。串口、HID、USB 模块会自动禁用（iOS 不支持），其余网络模块（TCP、UDP、WebSocket）可正常使用。
+
+#### 真机 (arm64) — 默认
 
 ```bash
-mkdir build-ios && cd build-ios
-cmake .. -G Xcode \
-         -DCMAKE_SYSTEM_NAME=iOS \
-         -DCMAKE_OSX_DEPLOYMENT_TARGET=13.0 \
-         -DCMAKE_OSX_ARCHITECTURES=arm64
-cmake --build . --config Release
+cmake -B build_ios -DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake
+cmake --build build_ios
 ```
+
+#### 模拟器 (Apple Silicon Mac 推荐)
+
+```bash
+cmake -B build_sim \
+  -DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake \
+  -DPLATFORM=SIMULATORARM64
+cmake --build build_sim
+```
+
+#### 模拟器 (Intel Mac)
+
+```bash
+cmake -B build_sim \
+  -DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake \
+  -DPLATFORM=SIMULATOR64
+cmake --build build_sim
+```
+
+#### FAT 静态库 (真机 + 模拟器二合一)
+
+> 需要 CMake 3.14+ 和 Xcode generator
+
+```bash
+cmake -B build_fat -G Xcode \
+  -DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake \
+  -DPLATFORM=OS64COMBINED
+cmake --build build_fat --config Release
+cmake --install build_fat --config Release
+```
+
+#### iOS 工具链参数
+
+| 参数 | 默认值 | 说明 |
+|------|--------|------|
+| `PLATFORM` | `OS64` | `OS64` / `SIMULATORARM64` / `SIMULATOR64` / `OS64COMBINED` |
+| `DEPLOYMENT_TARGET` | `15.0` | 最低 iOS 部署版本 |
+| `ENABLE_BITCODE` | `OFF` | Bitcode（Xcode 14+ 已废弃） |
+| `ENABLE_ARC` | `ON` | 自动引用计数 |
+| `ENABLE_SIMPLECOMMKIT_BLE` | `OFF` | BLE 蓝牙（需额外集成 CoreBluetooth） |
+
+> **注意**：iOS 上可用的模块为 TCP、UDP、WebSocket、MQTT。BLE 需要额外集成 iOS 原生 CoreBluetooth 框架，其他模块（串口/HID/USB/Python绑定/AI Fastmcpp）在 iOS 平台不可用。
 
 ### Android
 
@@ -525,7 +565,8 @@ SimpleCommKit/
 ├── VERSION                     # 版本号（唯一版本来源）
 ├── cmake/                      # CMake 辅助模块
 │   ├── DownloadUnzipProject.cmake   # 通用下载/解压函数
-│   └── ExecuteDownloadProjects.cmake # 第三方依赖定义与下载
+│   ├── ExecuteDownloadProjects.cmake # 第三方依赖定义与下载
+│   └── ios.toolchain.cmake      # iOS 交叉编译工具链
 ├── src/
 │   ├── SimpleCommKitUtil/      # 工具模块（错误码 / 版本 / 导出宏）
 │   ├── SimpleCommKitBle/       # BLE 蓝牙

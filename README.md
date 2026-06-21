@@ -110,7 +110,7 @@ SimpleCommKit/
 │   └── SimpleCommKitMqttClient/# MQTT Client
 ├── examples/                   # 10+ complete example programs
 ├── SimpleCommKitAi/            # AI/FastMCP integration (optional)
-├── cmake/                      # Custom CMake modules
+├── cmake/                      # Custom CMake modules & iOS toolchain
 ├── CMakeLists.txt              # Main build file
 ├── LICENSE                     # MIT License
 └── VERSION                     # Version
@@ -198,6 +198,38 @@ graph TB
     AI_CPP --> FASTMC
     PYBIND --> PYBIND11
 ```
+
+---
+
+## 🔨 Building
+
+> 📖 See **[doc/BUILD.md](doc/BUILD.md)** for the complete build guide.
+
+**Quick start:**
+
+```bash
+# Default (TCP + UDP + WebSocket)
+cmake -B build
+cmake --build build
+
+# Enable more modules
+cmake -B build \
+  -DENABLE_SIMPLECOMMKIT_BLE=ON \
+  -DENABLE_SIMPLECOMMKIT_SERIALPORT=ON \
+  -DENABLE_SIMPLECOMMKIT_MQTTCLIENT=ON \
+  -DSIMPLECOMMKIT_EXAMPLES=ON
+cmake --build build
+```
+
+**Platform-specific:**
+
+| Platform | Quick Command |
+|----------|--------------|
+| **macOS / Linux / Windows** | `cmake -B build && cmake --build build` |
+| **iOS** | `cmake -B build_ios -DCMAKE_TOOLCHAIN_FILE=cmake/ios.toolchain.cmake` |
+| **Android** | `cmake -B build_android -DCMAKE_TOOLCHAIN_FILE=$ANDROID_NDK/...` |
+
+The full guide covers prerequisites, all CMake options, dependency details, platform-specific notes, and troubleshooting. See **[doc/BUILD.md](doc/BUILD.md)**.
 
 ---
 
