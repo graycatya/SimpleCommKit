@@ -142,14 +142,25 @@ function(download_and_unzip)
         endif()
 
         # 4. 执行解压并增强错误信息
-        #    用 env 设置 LANG/LC_ALL 为 UTF-8 以处理含非 ASCII 文件名的 zip
-        execute_process(
-            COMMAND env LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 ${tar_command}
-            WORKING_DIRECTORY "${DU_UNZIP_TARGET_DIR}"
-            RESULT_VARIABLE unzip_result
-            OUTPUT_VARIABLE unzip_output
-            ERROR_VARIABLE unzip_error
-        )
+        #    Unix/macOS 上用 env 设置 LANG/LC_ALL 为 UTF-8 以处理含非 ASCII 文件名的 zip
+        #    Windows 上直接使用 tar 命令（env 在 Windows 上不可用）
+        if(WIN32)
+            execute_process(
+                COMMAND ${tar_command}
+                WORKING_DIRECTORY "${DU_UNZIP_TARGET_DIR}"
+                RESULT_VARIABLE unzip_result
+                OUTPUT_VARIABLE unzip_output
+                ERROR_VARIABLE unzip_error
+            )
+        else()
+            execute_process(
+                COMMAND env LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8 ${tar_command}
+                WORKING_DIRECTORY "${DU_UNZIP_TARGET_DIR}"
+                RESULT_VARIABLE unzip_result
+                OUTPUT_VARIABLE unzip_output
+                ERROR_VARIABLE unzip_error
+            )
+        endif()
 
         # Check unzip status
         if(NOT unzip_result EQUAL 0)
