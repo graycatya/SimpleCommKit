@@ -60,6 +60,17 @@ namespace ErrorCodes {
     constexpr ErrorCode SimpleCommKitBleCurrentPeripheralSubNotifyError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitBle, ErrorType::SimpleCommKitError, 0, 13);
     constexpr ErrorCode SimpleCommKitBleCurrentPeripheralUnSubScribeError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitBle, ErrorType::SimpleCommKitError, 0, 14);
 
+    // Native BLE failures: append only; values 0..14 remain unchanged.
+    constexpr ErrorCode SimpleCommKitBleNotSupported = MAKE_ERROR_CODE(ModuleID::SimpleCommKitBle, ErrorType::SimpleCommKitError, 0, 15);
+    constexpr ErrorCode SimpleCommKitBlePermissionDenied = MAKE_ERROR_CODE(ModuleID::SimpleCommKitBle, ErrorType::SimpleCommKitError, 0, 16);
+    constexpr ErrorCode SimpleCommKitBleTimeout = MAKE_ERROR_CODE(ModuleID::SimpleCommKitBle, ErrorType::SimpleCommKitError, 0, 17);
+    constexpr ErrorCode SimpleCommKitBleInvalidArgument = MAKE_ERROR_CODE(ModuleID::SimpleCommKitBle, ErrorType::SimpleCommKitError, 0, 18);
+    constexpr ErrorCode SimpleCommKitBleCancelled = MAKE_ERROR_CODE(ModuleID::SimpleCommKitBle, ErrorType::SimpleCommKitError, 0, 19);
+    constexpr ErrorCode SimpleCommKitBleReentrantOperation = MAKE_ERROR_CODE(ModuleID::SimpleCommKitBle, ErrorType::SimpleCommKitError, 0, 20);
+    constexpr ErrorCode SimpleCommKitBleGattError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitBle, ErrorType::SimpleCommKitError, 0, 21);
+    constexpr ErrorCode SimpleCommKitBleAmbiguousIdentity = MAKE_ERROR_CODE(ModuleID::SimpleCommKitBle, ErrorType::SimpleCommKitError, 0, 22);
+    constexpr ErrorCode SimpleCommKitBleBackendUnavailable = MAKE_ERROR_CODE(ModuleID::SimpleCommKitBle, ErrorType::SimpleCommKitError, 0, 23);
+
     // SimpleCommKitSerialPort module error codes
     constexpr ErrorCode SimpleCommKitSerialPortSuccess = MAKE_ERROR_CODE(ModuleID::SimpleCommKitSerialPort, ErrorType::SimpleCommKitSuccess, 0, 0);
     constexpr ErrorCode SimpleCommKitSerialPortInitError = MAKE_ERROR_CODE(ModuleID::SimpleCommKitSerialPort, ErrorType::SimpleCommKitError, 0, 1);

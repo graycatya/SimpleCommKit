@@ -24,6 +24,24 @@ set(HEADERS
 )
 
 
+if(SIMPLECOMMKIT_BLE_NATIVE)
+    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" OR ANDROID)
+        message(FATAL_ERROR "Native BLE is currently implemented only for Linux; other backends are pending")
+    endif()
+    find_package(PkgConfig REQUIRED)
+    pkg_check_modules(DBUS REQUIRED IMPORTED_TARGET dbus-1>=1.12)
+    find_package(Threads REQUIRED)
+    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/BLE_BUILD_DEPENDENCIES.txt"
+        "Backend: BlueZ D-Bus (experimental)\nlibdbus pkg-config version: ${DBUS_VERSION}\nLink libraries: ${DBUS_LINK_LIBRARIES}\nLicense review: see BLE_DEPENDENCIES.md; bundled copyright is the 1.16.2 reference package\n")
+    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/BLE_BUILD_DEPENDENCIES.txt"
+        DESTINATION share/licenses/SimpleCommKitBle)
+    set(PRIVATE_SOURCES
+        src/backends/BleCentralNative.cpp
+        src/backends/BleRuntime.cpp
+        src/backends/linux/BluezBackend.cpp)
+    set(PRIVATE_HEADER src/backends/BleBackend.h src/backends/BleRuntime.h)
+endif()
+
 add_library(${PROJECT_NAME}
     ${PRIVATE_HEADER}
     ${PRIVATE_SOURCES}
@@ -40,9 +58,12 @@ if(SIMPLECOMMKIT_BUILD_SHARED_LIBS)
     target_compile_definitions(${PROJECT_NAME} PRIVATE SIMPLECOMMKIT_EXPORTS)
 endif()
 
-target_link_libraries(${PROJECT_NAME} PUBLIC
-    simpleble::simpleble SimpleCommKitUtil
-)
+target_link_libraries(${PROJECT_NAME} PUBLIC SimpleCommKitUtil)
+if(SIMPLECOMMKIT_BLE_NATIVE)
+    target_link_libraries(${PROJECT_NAME} PRIVATE PkgConfig::DBUS Threads::Threads)
+else()
+    target_link_libraries(${PROJECT_NAME} PRIVATE simpleble::simpleble)
+endif()
 
 
 target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
@@ -54,13 +75,19 @@ else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
 endif()
 
-# # 安装规则
-# install(TARGETS ${PROJECT_NAME}
-#     LIBRARY DESTINATION lib
-#     ARCHIVE DESTINATION lib
-#     RUNTIME DESTINATION bin
-# )
+install(TARGETS ${PROJECT_NAME}
+    LIBRARY DESTINATION lib
+    ARCHIVE DESTINATION lib
+    RUNTIME DESTINATION bin
+)
 
 install(FILES ${HEADERS}
     DESTINATION include/${PROJECT_NAME}
 )
+
+if(SIMPLECOMMKIT_BLE_NATIVE)
+    install(FILES
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../doc/BLE_DEPENDENCIES.md"
+        "${CMAKE_CURRENT_SOURCE_DIR}/../../doc/licenses/dbus-1.16.2-debian-copyright"
+        DESTINATION share/licenses/SimpleCommKitBle)
+endif()

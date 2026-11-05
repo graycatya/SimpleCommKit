@@ -46,6 +46,8 @@ option(SIMPLECOMMKIT_EXAMPLES "SimpleCommKit Build all modules examples" OFF)
 option(ENABLE_SIMPLECOMMKITPYBIND "Enable SimpleCommKitPyBind" OFF)
 option(ENABLE_SIMPLECOMMKITAI_FASTMCPP "Enable SimpleCommKitAiFastmcpp" OFF)
 option(ENABLE_SIMPLECOMMKIT_BLE "Enable SimpleCommKitBle" OFF)
+option(SIMPLECOMMKIT_BLE_NATIVE "Use experimental native BLE backend (Linux only)" OFF)
+option(SIMPLECOMMKIT_BLE_TESTS "Build native BLE contract tests" OFF)
 option(ENABLE_SIMPLECOMMKIT_HID "Enable SimpleCommKitHid" OFF)
 option(ENABLE_SIMPLECOMMKIT_USB "Enable SimpleCommKitUsb" OFF)
 option(ENABLE_SIMPLECOMMKIT_SERIALPORT "Enable SimpleCommKitSerialPort" OFF)
@@ -101,7 +103,6 @@ set(SIMPLECOMMKIT_EXAMPLES_PATH ${CMAKE_CURRENT_SOURCE_DIR}/examples)
 set(SIMPLECOMMKITAI_FASTMCPP_PATH ${CMAKE_CURRENT_SOURCE_DIR}/SimpleCommKitAi)
 
 include(DownloadUnzipProject)
-include(ExecuteDownloadProjects)
 
 
 
@@ -211,6 +212,9 @@ if(CMAKE_SYSTEM_NAME MATCHES "IOS")
 endif()
 
 if(ENABLE_SIMPLECOMMKIT_BLE)
+    if(SIMPLECOMMKIT_BLE_NATIVE)
+        list(REMOVE_ITEM 3RDPARTY_ZIPS simpleble)
+    endif()
 else()
     list(REMOVE_ITEM 3RDPARTY_ZIPS
         simpleble
@@ -415,6 +419,8 @@ configure_file(
     @ONLY
 )
 
+include(ExecuteDownloadProjects)
+
 foreach(3RDPARTY ${3RDPARTY_ZIPS})
     if("${3RDPARTY}" IN_LIST IS_CUSTOM_BUILDS_PROJECT)
         add_subdirectory(${BUILDSCRIPTS_PATH}/${3RDPARTY})
@@ -482,3 +488,8 @@ if(ENABLE_SIMPLECOMMKITAI_FASTMCPP)
     message(STATUS "============================================================")
 endif()
 
+
+if(SIMPLECOMMKIT_BLE_TESTS)
+    enable_testing()
+    add_subdirectory(tests/ble)
+endif()

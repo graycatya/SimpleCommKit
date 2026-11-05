@@ -20,7 +20,13 @@ void printSeparator(const std::string& title) {
 
 int main() {
     std::cout << "=== SimpleCommKitBleCentral ===" << std::endl;
+    std::atomic<bool> connected_callback_triggered{false};
+    std::atomic<bool> disconnected_callback_triggered{false};
     SimpleCommKitBleCentral central;
+    central.set_Callback_Error([](SimpleCommKit::ErrorCode error) {
+        std::cerr << "[BLE ERROR] " << error << " : "
+                  << SimpleCommKit::SimpleCommKitErrorMap::GetErrorDescription(error) << std::endl;
+    });
     auto adapters = central.get_Adapters();
     std::cout << "Found " << adapters.size() << " adapter(s)" << std::endl;
     for (size_t i = 0; i < adapters.size(); ++i) {
@@ -29,14 +35,15 @@ int main() {
         std::cout << "    Address: " << adapters[i].dev_address << std::endl;
     }
 
+    if(adapters.empty()) {
+        std::cerr << "No Bluetooth adapters available; aborting." << std::endl;
+        return EXIT_FAILURE;
+    }
     auto selection = SimpleCommKitTestUtils::getUserInputInt("Please select a Adapter", adapters.size() - 1);
     if (!selection.has_value()) {
         return EXIT_FAILURE;
     }
     central.set_CurrentAdapter(adapters[selection.value()]);
-    central.set_Callback_Error([](SimpleCommKit::ErrorCode error) {
-        std::cout << "[CALLBACK] Error triggered: " << static_cast<int>(error) << " : " << SimpleCommKit::SimpleCommKitErrorMap::GetErrorDescription(error)  << std::endl;
-    });
     central.adapter_Set_Callback_On_Power_On([]() {
         std::cout << "[CALLBACK] Adapter powered on" << std::endl;
     });
@@ -106,6 +113,10 @@ int main() {
         std::cout << std::endl;
     }
 
+    if(scan_results.empty()) {
+        std::cerr << "No peripherals found; aborting." << std::endl;
+        return EXIT_FAILURE;
+    }
     selection = SimpleCommKitTestUtils::getUserInputInt("Please select a Peripheral", scan_results.size() - 1);
     if (!selection.has_value()) {
         return EXIT_FAILURE;
@@ -121,9 +132,7 @@ int main() {
     std::cout << "Selected peripheral: " << scan_results[selection.value()].identifier
               << " (" << scan_results[selection.value()].address << ")" << std::endl;
 
-    // Set connection callbacks
-    std::atomic<bool> connected_callback_triggered{false};
-    std::atomic<bool> disconnected_callback_triggered{false};
+    // Set connection callbacks. State above outlives central during shutdown.
 
     central.peripheral_Set_Callback_On_Connected([&connected_callback_triggered]() {
         std::cout << "[CALLBACK] Peripheral Connected" << std::endl;
@@ -147,20 +156,12 @@ int main() {
     if (central.peripheral_Is_Connected()) {
         std::cout << "[PASS] Peripheral connected successfully" << std::endl;
     } else {
-        std::cout << "[WARN] Peripheral connection may have failed or is still in progress" << std::endl;
-        std::cout << "       Connection callback triggered: " << (connected_callback_triggered.load() ? "YES" : "NO") << std::endl;
+        std::cerr << "[FAIL] Peripheral did not connect; aborting GATT tests." << std::endl;
+        return EXIT_FAILURE;
     }
 
-    // Check connectable status
-    bool is_connectable = central.peripheral_Is_Connectable();
-    std::cout << "Peripheral is connectable: " << (is_connectable ? "YES" : "NO") << std::endl;
-
-    // Get TX Power and MTU
-    int16_t tx_power = central.peripheral_Get_Tx_Power();
-    std::cout << "TX Power: " << tx_power << " dBm" << std::endl;
-
-    uint16_t mtu = central.peripheral_Get_Mtu();
-    std::cout << "MTU: " << mtu << " bytes" << std::endl;
+    // Optional connectability/MTU/TX power queries are not required for a GATT
+    // session and may be unsupported. Do not print their failure values as metrics.
 
     // ============================================
     // Service Discovery

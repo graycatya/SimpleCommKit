@@ -32,6 +32,9 @@ set(fastmcpp_VERSION_TAG "main")
 set(fastmcpp_URL "https://github.com/0xeb/fastmcpp/archive/refs/heads/${fastmcpp_VERSION_TAG}.zip")
 
 foreach(PROJ_NAME IN LISTS PROJECT_NAMES)
+    if(NOT "${PROJ_NAME}" IN_LIST 3RDPARTY_ZIPS)
+        continue()
+    endif()
     set(URL_VAR "${PROJ_NAME}_URL")
     set(VERSION_VAR "${PROJ_NAME}_VERSION_TAG")
     

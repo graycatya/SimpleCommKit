@@ -23,6 +23,16 @@ const std::unordered_map<ErrorCode, std::string> SimpleCommKitErrorMap::error_de
     {ErrorCodes::SimpleCommKitBleCurrentPeripheralSubNotifyError, "SimpleCommKitBle peripheral sub notify error"},
     {ErrorCodes::SimpleCommKitBleCurrentPeripheralUnSubScribeError, "SimpleCommKitBle peripheral unsubscribe error"},
 
+    {ErrorCodes::SimpleCommKitBleNotSupported, "SimpleCommKitBle NotSupported"},
+    {ErrorCodes::SimpleCommKitBlePermissionDenied, "SimpleCommKitBle PermissionDenied"},
+    {ErrorCodes::SimpleCommKitBleTimeout, "SimpleCommKitBle Timeout"},
+    {ErrorCodes::SimpleCommKitBleInvalidArgument, "SimpleCommKitBle InvalidArgument"},
+    {ErrorCodes::SimpleCommKitBleCancelled, "SimpleCommKitBle Cancelled"},
+    {ErrorCodes::SimpleCommKitBleReentrantOperation, "SimpleCommKitBle ReentrantOperation"},
+    {ErrorCodes::SimpleCommKitBleGattError, "SimpleCommKitBle GattError"},
+    {ErrorCodes::SimpleCommKitBleAmbiguousIdentity, "SimpleCommKitBle AmbiguousIdentity"},
+    {ErrorCodes::SimpleCommKitBleBackendUnavailable, "SimpleCommKitBle BackendUnavailable"},
+
     // ---- SimpleCommKitSerialPort ----
     {ErrorCodes::SimpleCommKitSerialPortSuccess, "SimpleCommKitSerialPort success"},
     {ErrorCodes::SimpleCommKitSerialPortInitError, "SimpleCommKitSerialPort init error"},

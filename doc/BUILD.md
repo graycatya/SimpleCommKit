@@ -1,5 +1,8 @@
 # SimpleCommKit 构建指南
 
+> BLE 原生后端正在分阶段实施。Linux 实验路径可通过 `SIMPLECOMMKIT_BLE_NATIVE=ON` 启用；默认仍使用 SimpleBLE。能力、构建和验证范围见 [BLE 后端说明](BLE_BACKENDS.md)。
+
+
 > **版本**: 0.1.1  
 > **构建系统**: CMake ≥ 3.19  
 > **C++ 标准**: C++17  
