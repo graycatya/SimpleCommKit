@@ -62,3 +62,16 @@ if(TARGET ble_bluez_tests AND TARGET _SimpleCommKitPyBle)
         "${CMAKE_CURRENT_LIST_DIR}/test_python.py" "$<TARGET_FILE_DIR:_SimpleCommKitPyBle>")
     set_tests_properties(ble_python_tests PROPERTIES TIMEOUT 20)
 endif()
+
+if(WIN32 AND MSVC)
+    add_executable(ble_winrt_tests test_winrt.cpp
+        "${BLE_ROOT}/src/backends/BleRuntime.cpp"
+        "${BLE_ROOT}/src/backends/windows/WinrtBackend.cpp")
+    target_include_directories(ble_winrt_tests PRIVATE "${BLE_ROOT}" "${BLE_ROOT}/src/backends" "${UTIL_ROOT}")
+    target_compile_features(ble_winrt_tests PRIVATE cxx_std_17)
+    target_compile_options(ble_winrt_tests PRIVATE /W4 /permissive- /EHsc /utf-8)
+    target_link_libraries(ble_winrt_tests PRIVATE windowsapp)
+    add_test(NAME ble_winrt_tests COMMAND ble_winrt_tests)
+    set_tests_properties(ble_winrt_tests PROPERTIES TIMEOUT 10)
+    # Hardware probes: --scan or --connect <MAC> (no business-data writes/unpair).
+endif()

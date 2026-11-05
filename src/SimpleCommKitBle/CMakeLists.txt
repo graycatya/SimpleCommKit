@@ -25,20 +25,29 @@ set(HEADERS
 
 
 if(SIMPLECOMMKIT_BLE_NATIVE)
-    if(NOT CMAKE_SYSTEM_NAME STREQUAL "Linux" OR ANDROID)
-        message(FATAL_ERROR "Native BLE is currently implemented only for Linux; other backends are pending")
+    if(WIN32)
+        if(NOT MSVC)
+            message(FATAL_ERROR "Native Windows BLE requires MSVC and Windows SDK C++/WinRT headers")
+        endif()
+        set(BLE_PLATFORM_SOURCE src/backends/windows/WinrtBackend.cpp)
+        set(BLE_PLATFORM_LIBRARIES windowsapp)
+    elseif(CMAKE_SYSTEM_NAME STREQUAL "Linux" AND NOT ANDROID)
+        find_package(PkgConfig REQUIRED)
+        pkg_check_modules(DBUS REQUIRED IMPORTED_TARGET dbus-1>=1.12)
+        find_package(Threads REQUIRED)
+        file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/BLE_BUILD_DEPENDENCIES.txt"
+            "Backend: BlueZ D-Bus (experimental)\nlibdbus pkg-config version: ${DBUS_VERSION}\nLink libraries: ${DBUS_LINK_LIBRARIES}\nLicense review: see BLE_DEPENDENCIES.md; bundled copyright is the 1.16.2 reference package\n")
+        install(FILES "${CMAKE_CURRENT_BINARY_DIR}/BLE_BUILD_DEPENDENCIES.txt"
+            DESTINATION share/licenses/SimpleCommKitBle)
+        set(BLE_PLATFORM_SOURCE src/backends/linux/BluezBackend.cpp)
+        set(BLE_PLATFORM_LIBRARIES PkgConfig::DBUS Threads::Threads)
+    else()
+        message(FATAL_ERROR "Native BLE supports Linux and Windows; Apple/Android backends are pending")
     endif()
-    find_package(PkgConfig REQUIRED)
-    pkg_check_modules(DBUS REQUIRED IMPORTED_TARGET dbus-1>=1.12)
-    find_package(Threads REQUIRED)
-    file(WRITE "${CMAKE_CURRENT_BINARY_DIR}/BLE_BUILD_DEPENDENCIES.txt"
-        "Backend: BlueZ D-Bus (experimental)\nlibdbus pkg-config version: ${DBUS_VERSION}\nLink libraries: ${DBUS_LINK_LIBRARIES}\nLicense review: see BLE_DEPENDENCIES.md; bundled copyright is the 1.16.2 reference package\n")
-    install(FILES "${CMAKE_CURRENT_BINARY_DIR}/BLE_BUILD_DEPENDENCIES.txt"
-        DESTINATION share/licenses/SimpleCommKitBle)
     set(PRIVATE_SOURCES
         src/backends/BleCentralNative.cpp
         src/backends/BleRuntime.cpp
-        src/backends/linux/BluezBackend.cpp)
+        ${BLE_PLATFORM_SOURCE})
     set(PRIVATE_HEADER src/backends/BleBackend.h src/backends/BleRuntime.h)
 endif()
 
@@ -60,7 +69,7 @@ endif()
 
 target_link_libraries(${PROJECT_NAME} PUBLIC SimpleCommKitUtil)
 if(SIMPLECOMMKIT_BLE_NATIVE)
-    target_link_libraries(${PROJECT_NAME} PRIVATE PkgConfig::DBUS Threads::Threads)
+    target_link_libraries(${PROJECT_NAME} PRIVATE ${BLE_PLATFORM_LIBRARIES})
 else()
     target_link_libraries(${PROJECT_NAME} PRIVATE simpleble::simpleble)
 endif()
@@ -71,6 +80,9 @@ target_compile_features(${PROJECT_NAME} PRIVATE cxx_std_17)
 
 if(MSVC)
     target_compile_options(${PROJECT_NAME} PRIVATE /W4)
+    if(SIMPLECOMMKIT_BLE_NATIVE)
+        target_compile_options(${PROJECT_NAME} PRIVATE /permissive- /EHsc /utf-8)
+    endif()
 else()
     target_compile_options(${PROJECT_NAME} PRIVATE -Wall -Wextra)
 endif()
@@ -85,7 +97,7 @@ install(FILES ${HEADERS}
     DESTINATION include/${PROJECT_NAME}
 )
 
-if(SIMPLECOMMKIT_BLE_NATIVE)
+if(SIMPLECOMMKIT_BLE_NATIVE AND CMAKE_SYSTEM_NAME STREQUAL "Linux")
     install(FILES
         "${CMAKE_CURRENT_SOURCE_DIR}/../../doc/BLE_DEPENDENCIES.md"
         "${CMAKE_CURRENT_SOURCE_DIR}/../../doc/licenses/dbus-1.16.2-debian-copyright"

@@ -12,7 +12,7 @@
 | BlueZ | 系统服务，经 D-Bus 进程间调用；目标 BlueZ 5.x，最低实机版本待固定 | [BlueZ 上游](https://www.bluez.org/)、[接口文档](https://bluez.readthedocs.io/en/latest/) | 不编译、链接、打包 BlueZ 源码或守护进程；不将其系统服务许可证等同于 libdbus 许可证。若交付镜像含 BlueZ，须按镜像实际包另行核对并保留其源码和 notices |
 | Linux SDK / libc / C++ 标准库 | 系统工具链；GNU C++ 15.2 本次编译 | 使用者工具链与发行版 | 不新增打包副本；静态发布时需要另行审核实际链接运行库及其例外条款 |
 | dbus-daemon、python3-dbus、PyGObject/GLib | 可选测试工具，不是 BLE 库依赖 | 发行版包，仅用于独立模拟总线测试 | 不加入 BLE 发布产物；测试环境许可证与运行时库清单分开 |
-| Windows SDK / C++/WinRT | 计划系统 SDK | 版本、来源与 SDK 条款待实现时核验 | 未引入、未核验 |
+| Windows SDK / C++/WinRT | 系统 SDK，最低 10.0.19041；本机 10.0.22621.0 | 使用安装的 C++/WinRT 头文件和 windowsapp.lib；未复制或分发 SDK，完整 SDK 条款及发布清单待 3.3 核验 | 3.1 x64 静态库/示例已构建，发布许可核验未完成 |
 | CoreBluetooth / Foundation | 计划 Apple 系统 frameworks/SDK | SDK 版本、部署目标与 Apple SDK 条款待核验 | 未引入、未核验 |
 | Android SDK/NDK 与 Java/JNI 组件 | 计划 SDK 及应用打包组件 | 最低版本、SDK 条款及自有 Java 源码清单待核验 | 未引入、未核验 |
 

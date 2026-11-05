@@ -6,37 +6,68 @@
 #include <sstream>
 #include <string>
 #include <vector>
+#include <limits>
+#include <mutex>
 #include <SimpleCommKitBleCentral.h>
 #include "SimpleCommKitErrorMap.hpp"
 #include "SimpleCommKitTestUtils.hpp"
 
 using namespace SimpleCommKit;
 
+// Build each message privately, then publish it under one lock. Error and
+// connection callbacks share the same lock with normal menu output.
+class ConsoleMessage {
+    std::ostringstream text;
+    std::ostream& destination;
+public:
+    explicit ConsoleMessage(std::ostream& destination) : destination(destination) {}
+    ~ConsoleMessage() {
+        static std::mutex mutex;
+        std::lock_guard<std::mutex> lock(mutex);
+        destination << text.str() << std::flush;
+    }
+    template<class T> ConsoleMessage& operator<<(const T& value) { text << value; return *this; }
+    ConsoleMessage& operator<<(std::ostream& (*manipulator)(std::ostream&)) { manipulator(text); return *this; }
+};
+ConsoleMessage consoleOut() { return ConsoleMessage(std::cout); }
+ConsoleMessage consoleError() { return ConsoleMessage(std::cerr); }
+
 void printSeparator(const std::string& title) {
-    std::cout << "\n========================================" << std::endl;
-    std::cout << "Testing: " << title << std::endl;
-    std::cout << "========================================\n" << std::endl;
+    consoleOut() << "\n========================================\nTesting: " << title
+                 << "\n========================================\n\n";
+}
+
+// Consume the entire command line so trailing text cannot become another
+// command. EOF/fail must leave the menu instead of reusing an unread value.
+bool readChoice(char& choice) {
+    if (!(std::cin >> choice)) {
+        consoleOut() << "\n[INFO] Input ended; finishing operations and disconnecting." << std::endl;
+        return false;
+    }
+    std::cin.ignore(std::numeric_limits<std::streamsize>::max(), '\n');
+    return true;
 }
 
 int main() {
-    std::cout << "=== SimpleCommKitBleCentral ===" << std::endl;
+    consoleOut() << "=== SimpleCommKitBleCentral ===" << std::endl;
     std::atomic<bool> connected_callback_triggered{false};
     std::atomic<bool> disconnected_callback_triggered{false};
+    std::atomic<int> notification_count{0};
     SimpleCommKitBleCentral central;
     central.set_Callback_Error([](SimpleCommKit::ErrorCode error) {
-        std::cerr << "[BLE ERROR] " << error << " : "
+        consoleError() << "[BLE ERROR] " << error << " : "
                   << SimpleCommKit::SimpleCommKitErrorMap::GetErrorDescription(error) << std::endl;
     });
     auto adapters = central.get_Adapters();
-    std::cout << "Found " << adapters.size() << " adapter(s)" << std::endl;
+    consoleOut() << "Found " << adapters.size() << " adapter(s)" << std::endl;
     for (size_t i = 0; i < adapters.size(); ++i) {
-        std::cout << "  Adapter " << i << ":" << std::endl;
-        std::cout << "    Identifier: " << adapters[i].dev_identifier << std::endl;
-        std::cout << "    Address: " << adapters[i].dev_address << std::endl;
+        consoleOut() << "  Adapter " << i << ":" << std::endl;
+        consoleOut() << "    Identifier: " << adapters[i].dev_identifier << std::endl;
+        consoleOut() << "    Address: " << adapters[i].dev_address << std::endl;
     }
 
     if(adapters.empty()) {
-        std::cerr << "No Bluetooth adapters available; aborting." << std::endl;
+        consoleError() << "No Bluetooth adapters available; aborting." << std::endl;
         return EXIT_FAILURE;
     }
     auto selection = SimpleCommKitTestUtils::getUserInputInt("Please select a Adapter", adapters.size() - 1);
@@ -45,23 +76,23 @@ int main() {
     }
     central.set_CurrentAdapter(adapters[selection.value()]);
     central.adapter_Set_Callback_On_Power_On([]() {
-        std::cout << "[CALLBACK] Adapter powered on" << std::endl;
+        consoleOut() << "[CALLBACK] Adapter powered on" << std::endl;
     });
     central.adapter_Set_Callback_On_Power_Off([]() {
-        std::cout << "[CALLBACK] Adapter powered off" << std::endl;
+        consoleOut() << "[CALLBACK] Adapter powered off" << std::endl;
     });
     central.adapter_Set_Callback_On_Scan_Start([]() {
-        std::cout << "[CALLBACK] Scan started" << std::endl;
+        consoleOut() << "[CALLBACK] Scan started" << std::endl;
     });
     central.adapter_Set_Callback_On_Scan_Stop([]() {
-        std::cout << "[CALLBACK] Scan stopped" << std::endl;
+        consoleOut() << "[CALLBACK] Scan stopped" << std::endl;
     });
     central.adapter_Set_Callback_On_Scan_Found([](SimpleCommKitBlePeripheral peripheral) {
-        std::cout << "[CALLBACK] Scan Found - Device: " << peripheral.address
+        consoleOut() << "[CALLBACK] Scan Found - Device: " << peripheral.address
                            << " (" << peripheral.identifier << ") RSSI: " << peripheral.rssi << std::endl;
     });
     central.adapter_Set_Callback_On_Scan_Updated([](SimpleCommKitBlePeripheral peripheral) {
-        std::cout << "[CALLBACK] Scan updated: " << peripheral.address
+        consoleOut() << "[CALLBACK] Scan updated: " << peripheral.address
                            << " (" << peripheral.identifier << ") RSSI: " << peripheral.rssi << std::endl;
     });
     if(!central.adapter_Is_Powered())
@@ -70,16 +101,16 @@ int main() {
     }
     if(!central.Bluetooth_Enabled())
     {
-        std::cerr << "Bluetooth is not enabled. Please enable Bluetooth and try again." << std::endl;
+        consoleError() << "Bluetooth is not enabled. Please enable Bluetooth and try again." << std::endl;
     }
 
     central.adapter_Scan_For(15000);
 
     std::vector<SimpleCommKitBlePeripheral> scan_results =  central.adapter_Get_Scan_Results();
     for (size_t i = 0; i < scan_results.size(); ++i) {
-        std::cout << "  Device " << i << ":" << std::endl;
-        std::cout << "    Identifier: " << scan_results[i].identifier << std::endl;
-        std::cout << "    Address: " << scan_results[i].address << std::endl;
+        consoleOut() << "  Device " << i << ":" << std::endl;
+        consoleOut() << "    Identifier: " << scan_results[i].identifier << std::endl;
+        consoleOut() << "    Address: " << scan_results[i].address << std::endl;
 
         std::string addr_type_str;
         switch (scan_results[i].address_type) {
@@ -96,25 +127,25 @@ int main() {
                 addr_type_str = "UNKNOWN";
                 break;
         }
-        std::cout << "    Address Type: " << addr_type_str << std::endl;
-        std::cout << "    RSSI: " << scan_results[i].rssi << std::endl;
-        std::cout << "    Manufacturer Data: ";
+        consoleOut() << "    Address Type: " << addr_type_str << std::endl;
+        consoleOut() << "    RSSI: " << scan_results[i].rssi << std::endl;
+        consoleOut() << "    Manufacturer Data: ";
         if (!scan_results[i].manufacturer.empty()) {
             for (const auto& [company_id, data] : scan_results[i].manufacturer) {
-                std::cout << "CompanyID: 0x" << std::hex << company_id << std::dec << ", Data: ";
+                consoleOut() << "CompanyID: 0x" << std::hex << company_id << std::dec << ", Data: ";
                 for (const auto& byte : data) {
-                    std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
+                    consoleOut() << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
                 }
-                std::cout << std::dec;
+                consoleOut() << std::dec;
             }
         } else {
-            std::cout << "None";
+            consoleOut() << "None";
         }
-        std::cout << std::endl;
+        consoleOut() << std::endl;
     }
 
     if(scan_results.empty()) {
-        std::cerr << "No peripherals found; aborting." << std::endl;
+        consoleError() << "No peripherals found; aborting." << std::endl;
         return EXIT_FAILURE;
     }
     selection = SimpleCommKitTestUtils::getUserInputInt("Please select a Peripheral", scan_results.size() - 1);
@@ -129,34 +160,34 @@ int main() {
 
     // Set the selected peripheral
     central.set_CurrentPeripheral(scan_results[selection.value()]);
-    std::cout << "Selected peripheral: " << scan_results[selection.value()].identifier
+    consoleOut() << "Selected peripheral: " << scan_results[selection.value()].identifier
               << " (" << scan_results[selection.value()].address << ")" << std::endl;
 
     // Set connection callbacks. State above outlives central during shutdown.
 
     central.peripheral_Set_Callback_On_Connected([&connected_callback_triggered]() {
-        std::cout << "[CALLBACK] Peripheral Connected" << std::endl;
+        consoleOut() << "[CALLBACK] Peripheral Connected" << std::endl;
         connected_callback_triggered.store(true);
     });
 
     central.peripheral_Set_Callback_On_Disconnected([&disconnected_callback_triggered]() {
-        std::cout << "[CALLBACK] Peripheral Disconnected" << std::endl;
+        consoleOut() << "[CALLBACK] Peripheral Disconnected" << std::endl;
         disconnected_callback_triggered.store(true);
     });
 
     // Connect to peripheral
-    std::cout << "Connecting to peripheral..." << std::endl;
+    consoleOut() << "Connecting to peripheral..." << std::endl;
     central.peripheral_Connect();
 
     // Wait for connection to establish
-    std::cout << "Waiting for connection..." << std::endl;
+    consoleOut() << "Waiting for connection..." << std::endl;
     std::this_thread::sleep_for(std::chrono::milliseconds(3000));
 
     // Check connection status
     if (central.peripheral_Is_Connected()) {
-        std::cout << "[PASS] Peripheral connected successfully" << std::endl;
+        consoleOut() << "[PASS] Peripheral connected successfully" << std::endl;
     } else {
-        std::cerr << "[FAIL] Peripheral did not connect; aborting GATT tests." << std::endl;
+        consoleError() << "[FAIL] Peripheral did not connect; aborting GATT tests." << std::endl;
         return EXIT_FAILURE;
     }
 
@@ -168,41 +199,41 @@ int main() {
     // ============================================
     printSeparator("Service Discovery");
 
-    std::cout << "Discovering services..." << std::endl;
+    consoleOut() << "Discovering services..." << std::endl;
     auto services = central.peripheral_Services();
 
     if (services.empty()) {
-        std::cout << "[WARN] No services discovered. The device may still be connecting or has no discoverable services." << std::endl;
+        consoleOut() << "[WARN] No services discovered. The device may still be connecting or has no discoverable services." << std::endl;
     } else {
-        std::cout << "Discovered " << services.size() << " service(s)" << std::endl;
+        consoleOut() << "Discovered " << services.size() << " service(s)" << std::endl;
 
         for (size_t i = 0; i < services.size(); ++i) {
-            std::cout << "\n  Service " << i << ":" << std::endl;
-            std::cout << "    UUID: " << services[i].uuid << std::endl;
-            std::cout << "    Data length: " << services[i].data.size() << " bytes";
+            consoleOut() << "\n  Service " << i << ":" << std::endl;
+            consoleOut() << "    UUID: " << services[i].uuid << std::endl;
+            consoleOut() << "    Data length: " << services[i].data.size() << " bytes";
             if (!services[i].data.empty()) {
-                std::cout << " (";
+                consoleOut() << " (";
                 for (size_t j = 0; j < std::min(services[i].data.size(), size_t(10)); ++j) {
-                    std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(services[i].data[j]) << " ";
+                    consoleOut() << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(services[i].data[j]) << " ";
                 }
-                if (services[i].data.size() > 10) std::cout << "...";
-                std::cout << std::dec << ")";
+                if (services[i].data.size() > 10) consoleOut() << "...";
+                consoleOut() << std::dec << ")";
             }
-            std::cout << std::endl;
+            consoleOut() << std::endl;
 
-            std::cout << "    Characteristics (" << services[i].characteristics.size() << "):" << std::endl;
+            consoleOut() << "    Characteristics (" << services[i].characteristics.size() << "):" << std::endl;
             for (size_t j = 0; j < services[i].characteristics.size(); ++j) {
                 const auto& ch = services[i].characteristics[j];
-                std::cout << "      [" << j << "] UUID: " << ch.uuid << std::endl;
-                std::cout << "           Capabilities: ";
+                consoleOut() << "      [" << j << "] UUID: " << ch.uuid << std::endl;
+                consoleOut() << "           Capabilities: ";
                 bool first = true;
-                if (ch.can_read) { std::cout << "READ"; first = false; }
-                if (ch.can_write_request) { std::cout << (first ? "" : ", ") << "WRITE-REQUEST"; first = false; }
-                if (ch.can_write_command) { std::cout << (first ? "" : ", ") << "WRITE-COMMAND"; first = false; }
-                if (ch.can_notify) { std::cout << (first ? "" : ", ") << "NOTIFY"; first = false; }
-                if (ch.can_indicate) { std::cout << (first ? "" : ", ") << "INDICATE"; first = false; }
-                std::cout << std::endl;
-                std::cout << "           Descriptors: " << ch.descriptors_uuid.size() << std::endl;
+                if (ch.can_read) { consoleOut() << "READ"; first = false; }
+                if (ch.can_write_request) { consoleOut() << (first ? "" : ", ") << "WRITE-REQUEST"; first = false; }
+                if (ch.can_write_command) { consoleOut() << (first ? "" : ", ") << "WRITE-COMMAND"; first = false; }
+                if (ch.can_notify) { consoleOut() << (first ? "" : ", ") << "NOTIFY"; first = false; }
+                if (ch.can_indicate) { consoleOut() << (first ? "" : ", ") << "INDICATE"; first = false; }
+                consoleOut() << std::endl;
+                consoleOut() << "           Descriptors: " << ch.descriptors_uuid.size() << std::endl;
             }
         }
     }
@@ -216,123 +247,136 @@ int main() {
         // Select a service
         selection = SimpleCommKitTestUtils::getUserInputInt("Select a Service for operations", services.size() - 1);
         if (!selection.has_value()) {
-            std::cout << "Skipping characteristic operations" << std::endl;
+            consoleOut() << "Skipping characteristic operations" << std::endl;
         } else {
             auto& selected_service = services[selection.value()];
 
             if (selected_service.characteristics.empty()) {
-                std::cout << "[WARN] No characteristics in selected service" << std::endl;
+                consoleOut() << "[WARN] No characteristics in selected service" << std::endl;
             } else {
                 // Select a characteristic
                 auto char_selection = SimpleCommKitTestUtils::getUserInputInt("Select a Characteristic", selected_service.characteristics.size() - 1);
                 if (!char_selection.has_value()) {
-                    std::cout << "Skipping characteristic operations" << std::endl;
+                    consoleOut() << "Skipping characteristic operations" << std::endl;
                 } else {
                     auto& selected_char = selected_service.characteristics[char_selection.value()];
                     std::string service_uuid = selected_service.uuid;
                     std::string char_uuid = selected_char.uuid;
 
-                    std::cout << "\nSelected: Service=" << service_uuid << ", Characteristic=" << char_uuid << std::endl;
+                    consoleOut() << "\nSelected: Service=" << service_uuid << ", Characteristic=" << char_uuid << std::endl;
 
                     // Show capabilities summary
-                    std::cout << "  Capabilities: ";
+                    consoleOut() << "  Capabilities: ";
                     bool first_cap = true;
-                    if (selected_char.can_read) { std::cout << "READ"; first_cap = false; }
-                    if (selected_char.can_write_request) { std::cout << (first_cap ? "" : ", ") << "WRITE-REQUEST"; first_cap = false; }
-                    if (selected_char.can_write_command) { std::cout << (first_cap ? "" : ", ") << "WRITE-COMMAND"; first_cap = false; }
-                    if (selected_char.can_notify) { std::cout << (first_cap ? "" : ", ") << "NOTIFY"; first_cap = false; }
-                    if (selected_char.can_indicate) { std::cout << (first_cap ? "" : ", ") << "INDICATE"; first_cap = false; }
-                    std::cout << std::endl;
+                    if (selected_char.can_read) { consoleOut() << "READ"; first_cap = false; }
+                    if (selected_char.can_write_request) { consoleOut() << (first_cap ? "" : ", ") << "WRITE-REQUEST"; first_cap = false; }
+                    if (selected_char.can_write_command) { consoleOut() << (first_cap ? "" : ", ") << "WRITE-COMMAND"; first_cap = false; }
+                    if (selected_char.can_notify) { consoleOut() << (first_cap ? "" : ", ") << "NOTIFY"; first_cap = false; }
+                    if (selected_char.can_indicate) { consoleOut() << (first_cap ? "" : ", ") << "INDICATE"; first_cap = false; }
+                    consoleOut() << std::endl;
 
                     // ============================================
                     // Step 1: Register Notifications/Indications FIRST
                     // ============================================
-                    std::atomic<int> notification_count{0};
                     bool subscribed = false;
 
                     if (selected_char.can_notify || selected_char.can_indicate) {
                         printSeparator("Characteristic Notification/Indication");
 
-                        std::cout << "Subscribe to notifications/indications? (y/n): ";
-                        char subscribe_choice;
-                        std::cin >> subscribe_choice;
-                        std::cin.ignore();
-
-                        if (subscribe_choice == 'y' || subscribe_choice == 'Y') {
+                        consoleOut() << "Subscribe to notifications/indications? (y/n): ";
+                        char subscribe_choice{};
+                        if (readChoice(subscribe_choice) && (subscribe_choice == 'y' || subscribe_choice == 'Y')) {
                             if (selected_char.can_notify) {
-                                std::cout << "Subscribing to NOTIFY..." << std::endl;
+                                consoleOut() << "Subscribing to NOTIFY..." << std::endl;
                                 central.peripheral_Notify(service_uuid, char_uuid,
                                     [&notification_count](std::vector<uint8_t> payload) {
-                                        std::cout << "[NOTIFY] Received " << payload.size() << " bytes: ";
-                                        for (const auto& byte : payload) {
-                                            std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
-                                        }
-                                        std::cout << std::dec << std::endl;
+                                        std::ostringstream message;
+                                        message << "[NOTIFY] Received " << payload.size() << " bytes: ";
+                                        for (const auto& byte : payload)
+                                            message << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
+                                        consoleOut() << message.str() << std::endl;
                                         notification_count.fetch_add(1);
                                     });
-                                std::cout << "[PASS] Notify subscription set up" << std::endl;
+                                consoleOut() << "[INFO] Notify subscription requested; check BLE errors" << std::endl;
                             }
 
                             if (selected_char.can_indicate) {
-                                std::cout << "Subscribing to INDICATE..." << std::endl;
+                                consoleOut() << "Subscribing to INDICATE..." << std::endl;
                                 central.peripheral_Indicate(service_uuid, char_uuid,
                                     [&notification_count](std::vector<uint8_t> payload) {
-                                        std::cout << "[INDICATE] Received " << payload.size() << " bytes: ";
-                                        for (const auto& byte : payload) {
-                                            std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
-                                        }
-                                        std::cout << std::dec << std::endl;
+                                        std::ostringstream message;
+                                        message << "[INDICATE] Received " << payload.size() << " bytes: ";
+                                        for (const auto& byte : payload)
+                                            message << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
+                                        consoleOut() << message.str() << std::endl;
                                         notification_count.fetch_add(1);
                                     });
-                                std::cout << "[PASS] Indicate subscription set up" << std::endl;
+                                consoleOut() << "[INFO] Indicate subscription requested; check BLE errors" << std::endl;
                             }
                             subscribed = true;
                         }
                     } else {
-                        std::cout << "[INFO] Characteristic does not support NOTIFY/INDICATE" << std::endl;
+                        consoleOut() << "[INFO] Characteristic does not support NOTIFY/INDICATE" << std::endl;
                     }
 
                     // ============================================
                     // Step 2: Interactive Read / Write Operations
                     // ============================================
                     bool running = true;
-                    while (running) {
+                    while (running && std::cin) {
+                        if (disconnected_callback_triggered.load() || !central.peripheral_Is_Connected()) {
+                            consoleOut() << "[WARN] Peripheral disconnected; leaving characteristic operations." << std::endl;
+                            break;
+                        }
                         printSeparator("Read / Write Operations");
-                        std::cout << "Choose operation:" << std::endl;
+                        consoleOut() << "Choose operation:" << std::endl;
                         if (selected_char.can_read) {
-                            std::cout << "  (r) Read characteristic value" << std::endl;
+                            consoleOut() << "  (r) Read characteristic value" << std::endl;
                         }
                         if (selected_char.can_write_request || selected_char.can_write_command) {
-                            std::cout << "  (w) Write characteristic value" << std::endl;
+                            consoleOut() << "  (w) Write characteristic value" << std::endl;
                         }
-                        std::cout << "  (q) Quit to next step" << std::endl;
+                        consoleOut() << "  (q) Quit to next step" << std::endl;
                         if (subscribed) {
-                            std::cout << "  Notifications received so far: " << notification_count.load() << std::endl;
+                            consoleOut() << "  Notifications received so far: " << notification_count.load() << std::endl;
                         }
-                        std::cout << "Enter choice: ";
-                        char op_choice;
-                        std::cin >> op_choice;
-                        std::cin.ignore();
+                        consoleOut() << "Enter choice: ";
+                        char op_choice{};
+                        if (!readChoice(op_choice)) break;
+                        if (disconnected_callback_triggered.load() || !central.peripheral_Is_Connected()) {
+                            consoleOut() << "[WARN] Peripheral disconnected; command skipped." << std::endl;
+                            break;
+                        }
 
                         if (op_choice == 'r' && selected_char.can_read) {
                             // Read operation
-                            std::cout << "Reading characteristic value..." << std::endl;
+                            consoleOut() << "Reading characteristic value..." << std::endl;
                             try {
                                 auto read_data = central.peripheral_Read(service_uuid, char_uuid);
-                                std::cout << "Read " << read_data.size() << " bytes: ";
-                                for (const auto& byte : read_data) {
-                                    std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
+                                if (disconnected_callback_triggered.load() || !central.peripheral_Is_Connected()) {
+                                    consoleOut() << "[WARN] Peripheral disconnected during read; no successful result confirmed." << std::endl;
+                                    break;
                                 }
-                                std::cout << std::dec << std::endl;
-                                std::cout << "[PASS] Read operation completed" << std::endl;
+                                if (read_data.empty()) {
+                                    consoleOut() << "[INFO] No data returned. The value may be empty or the read may have failed; check BLE errors." << std::endl;
+                                } else {
+                                    std::ostringstream message;
+                                    message << "Read " << read_data.size() << " bytes: ";
+                                    for (const auto byte : read_data)
+                                        message << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
+                                    consoleOut() << message.str() << std::endl;
+                                }
                             } catch (const std::exception& e) {
-                                std::cout << "[ERROR] Read failed: " << e.what() << std::endl;
+                                consoleOut() << "[ERROR] Read failed: " << e.what() << std::endl;
                             }
                         } else if (op_choice == 'w' && (selected_char.can_write_request || selected_char.can_write_command)) {
                             // Prompt user for hex data input
-                            std::cout << "Enter hex data to write (e.g., AA BB CC DD): ";
+                            consoleOut() << "Enter hex data to write (e.g., AA BB CC DD): ";
                             std::string hex_input;
-                            std::getline(std::cin, hex_input);
+                            if (!std::getline(std::cin, hex_input)) {
+                                consoleOut() << "\n[INFO] Input ended; skipping write and disconnecting." << std::endl;
+                                break;
+                            }
 
                             std::vector<uint8_t> write_data;
                             std::istringstream hex_stream(hex_input);
@@ -342,83 +386,83 @@ int main() {
                                     uint8_t byte_val = static_cast<uint8_t>(std::stoul(byte_str, nullptr, 16));
                                     write_data.push_back(byte_val);
                                 } catch (...) {
-                                    std::cout << "[WARN] Invalid hex byte: " << byte_str << ", skipping" << std::endl;
+                                    consoleOut() << "[WARN] Invalid hex byte: " << byte_str << ", skipping" << std::endl;
                                 }
                             }
 
                             if (write_data.empty()) {
-                                std::cout << "[WARN] No valid data entered, write skipped" << std::endl;
+                                consoleOut() << "[WARN] No valid data entered, write skipped" << std::endl;
                                 continue;
                             }
 
                             // Print data being written
-                            std::cout << "Writing " << write_data.size() << " bytes: ";
+                            consoleOut() << "Writing " << write_data.size() << " bytes: ";
                             for (const auto& byte : write_data) {
-                                std::cout << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
+                                consoleOut() << std::hex << std::setfill('0') << std::setw(2) << static_cast<int>(byte) << " ";
                             }
-                            std::cout << std::dec << std::endl;
+                            consoleOut() << std::dec << std::endl;
 
                             // Choose write method if both supported
                             if (selected_char.can_write_request && selected_char.can_write_command) {
-                                std::cout << "Choose write method: (1) WRITE-REQUEST (with response), (2) WRITE-COMMAND (without response): ";
-                                char write_choice;
-                                std::cin >> write_choice;
-                                std::cin.ignore();
+                                consoleOut() << "Choose write method: (1) WRITE-REQUEST (with response), (2) WRITE-COMMAND (without response): ";
+                                char write_choice{};
+                                if (!readChoice(write_choice)) break;
 
                                 if (write_choice == '1') {
                                     try {
                                         central.peripheral_Write_Request(service_uuid, char_uuid, write_data);
-                                        std::cout << "[PASS] Write Request completed" << std::endl;
+                                        consoleOut() << "[INFO] Write Request submitted; check BLE errors" << std::endl;
                                     } catch (const std::exception& e) {
-                                        std::cout << "[ERROR] Write Request failed: " << e.what() << std::endl;
+                                        consoleOut() << "[ERROR] Write Request failed: " << e.what() << std::endl;
                                     }
                                 } else if (write_choice == '2') {
                                     try {
                                         central.peripheral_Write_Command(service_uuid, char_uuid, write_data);
-                                        std::cout << "[PASS] Write Command completed" << std::endl;
+                                        consoleOut() << "[INFO] Write Command submitted; check BLE errors" << std::endl;
                                     } catch (const std::exception& e) {
-                                        std::cout << "[ERROR] Write Command failed: " << e.what() << std::endl;
+                                        consoleOut() << "[ERROR] Write Command failed: " << e.what() << std::endl;
                                     }
                                 } else {
-                                    std::cout << "[WARN] Invalid choice, write skipped" << std::endl;
+                                    consoleOut() << "[WARN] Invalid choice, write skipped" << std::endl;
                                 }
                             } else if (selected_char.can_write_request) {
                                 try {
                                     central.peripheral_Write_Request(service_uuid, char_uuid, write_data);
-                                    std::cout << "[PASS] Write Request completed" << std::endl;
+                                    consoleOut() << "[INFO] Write Request submitted; check BLE errors" << std::endl;
                                 } catch (const std::exception& e) {
-                                    std::cout << "[ERROR] Write Request failed: " << e.what() << std::endl;
+                                    consoleOut() << "[ERROR] Write Request failed: " << e.what() << std::endl;
                                 }
                             } else if (selected_char.can_write_command) {
                                 try {
                                     central.peripheral_Write_Command(service_uuid, char_uuid, write_data);
-                                    std::cout << "[PASS] Write Command completed" << std::endl;
+                                    consoleOut() << "[INFO] Write Command submitted; check BLE errors" << std::endl;
                                 } catch (const std::exception& e) {
-                                    std::cout << "[ERROR] Write Command failed: " << e.what() << std::endl;
+                                    consoleOut() << "[ERROR] Write Command failed: " << e.what() << std::endl;
                                 }
                             }
                         } else if (op_choice == 'q') {
                             running = false;
                         } else {
-                            std::cout << "[WARN] Invalid choice or operation not supported" << std::endl;
+                            consoleOut() << "[WARN] Invalid choice or operation not supported" << std::endl;
                         }
                     }
 
                     // ============================================
                     // Step 3: Unsubscribe
                     // ============================================
-                    if (subscribed) {
-                        std::cout << "\nUnsubscribing..." << std::endl;
+                    if (subscribed && !disconnected_callback_triggered.load() && central.peripheral_Is_Connected()) {
+                        consoleOut() << "\nUnsubscribing..." << std::endl;
                         central.peripheral_Unsubscribe(service_uuid, char_uuid);
-                        std::cout << "[PASS] Unsubscribed. Total notifications received: " << notification_count.load() << std::endl;
+                        consoleOut() << "[INFO] Unsubscribe requested. Total notifications received: " << notification_count.load() << std::endl;
                     }
 
                     // ============================================
                     // Step 4: Descriptor Operations
                     // ============================================
-                    if (!selected_char.descriptors_uuid.empty()) {
+                    if (std::cin && !disconnected_callback_triggered.load() && central.peripheral_Is_Connected()
+                        && !selected_char.descriptors_uuid.empty()) {
                         printSeparator("Descriptor Operations");
-                        std::cout << "This characteristic has " << selected_char.descriptors_uuid.size()
+                        consoleOut() << "This characteristic has " << selected_char.descriptors_uuid.size()
                                   << " descriptor(s)" << std::endl;
 
                         auto desc_selection = SimpleCommKitTestUtils::getUserInputInt(
@@ -426,11 +470,11 @@ int main() {
 
                         if (desc_selection.has_value()) {
                             std::string desc_uuid = selected_char.descriptors_uuid[desc_selection.value()];
-                            std::cout << "Selected descriptor: " << desc_uuid << std::endl;
+                            consoleOut() << "Selected descriptor: " << desc_uuid << std::endl;
 
                             // Write descriptor
                             printSeparator("Descriptor Write");
-                            std::cout << "Enter hex data to write to descriptor (e.g., 01 00): ";
+                            consoleOut() << "Enter hex data to write to descriptor (e.g., 01 00): ";
                             std::string desc_hex_input;
                             std::getline(std::cin, desc_hex_input);
 
@@ -442,19 +486,19 @@ int main() {
                                     uint8_t byte_val = static_cast<uint8_t>(std::stoul(desc_byte_str, nullptr, 16));
                                     desc_write_data.push_back(byte_val);
                                 } catch (...) {
-                                    std::cout << "[WARN] Invalid hex byte: " << desc_byte_str << ", skipping" << std::endl;
+                                    consoleOut() << "[WARN] Invalid hex byte: " << desc_byte_str << ", skipping" << std::endl;
                                 }
                             }
 
                             if (desc_write_data.empty()) {
-                                std::cout << "[WARN] No valid data entered, descriptor write skipped" << std::endl;
+                                consoleOut() << "[WARN] No valid data entered, descriptor write skipped" << std::endl;
                             } else {
-                                std::cout << "Writing " << desc_write_data.size() << " bytes to descriptor..." << std::endl;
+                                consoleOut() << "Writing " << desc_write_data.size() << " bytes to descriptor..." << std::endl;
                                 try {
                                     central.peripheral_Write(service_uuid, char_uuid, desc_uuid, desc_write_data);
-                                    std::cout << "[PASS] Descriptor write completed" << std::endl;
+                                    consoleOut() << "[INFO] Descriptor write submitted; check BLE errors" << std::endl;
                                 } catch (const std::exception& e) {
-                                    std::cout << "[ERROR] Descriptor write failed: " << e.what() << std::endl;
+                                    consoleOut() << "[ERROR] Descriptor write failed: " << e.what() << std::endl;
                                 }
                             }
                         }
@@ -469,21 +513,21 @@ int main() {
     // ============================================
     printSeparator("Disconnect");
     if (central.peripheral_Is_Connected()) {
-        std::cout << "Disconnecting peripheral..." << std::endl;
+        consoleOut() << "Disconnecting peripheral..." << std::endl;
         central.peripheral_Disconnect();
-        std::cout << "[PASS] Disconnect request sent" << std::endl;
+        consoleOut() << "[PASS] Disconnect request sent" << std::endl;
 
         // Wait for disconnection
         std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
         if (!central.peripheral_Is_Connected()) {
-            std::cout << "[PASS] Peripheral disconnected successfully" << std::endl;
+            consoleOut() << "[PASS] Peripheral disconnected successfully" << std::endl;
         }
     } else {
-        std::cout << "[INFO] Peripheral already disconnected" << std::endl;
+        consoleOut() << "[INFO] Peripheral already disconnected" << std::endl;
     }
 
-    std::cout << "\n=== All Connection/Service/Characteristic Tests Completed ===" << std::endl;
+    consoleOut() << "\n=== All Connection/Service/Characteristic Tests Completed ===" << std::endl;
 
     return 0;
 }
