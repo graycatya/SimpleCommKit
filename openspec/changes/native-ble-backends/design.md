@@ -46,7 +46,7 @@ Android 增加独立的初始化/Context 传递集成入口，不修改现有 Ce
 
 ### 4. 身份、状态和错误
 
-状态至少覆盖未选择适配器、就绪、扫描、连接中、已连接和关闭中；使用连接代次丢弃旧设备的迟到事件。适配器/设备选择采用原生稳定身份与内部映射，address 不作为所有平台的主键；Apple address 留空，保留 address_type=UNSPECIFIED。展示名称与身份分离，不把设备名称当唯一标识。
+状态至少覆盖未选择适配器、就绪、扫描、连接中、已连接和关闭中；使用连接代次丢弃旧设备的迟到事件。适配器/设备选择采用原生稳定身份与内部映射，address 不作为所有平台的主键；Apple address 使用系统 UUID 虚拟地址，保留 address_type=UNSPECIFIED。展示名称与身份分离，不把设备名称当唯一标识。
 
 保留现有错误码值，新增不支持、权限拒绝、超时、无效参数、取消、重入及 GATT 失败等错误并补齐描述。失败调用一次错误回调，查询返回现有类型的空/false/0，void 方法只报告错误；空结果的含义由错误回调区分。不支持电源、配对或硬件指标时不得伪造成功或数值。
 
@@ -75,7 +75,20 @@ Android 增加独立的初始化/Context 传递集成入口，不修改现有 Ce
 
 - 使用 `SIMPLECOMMKIT_BLE_NATIVE` 实验开关隔离新旧实现。Linux 原生开启时从下载及链接列表移除 SimpleBLE；其它系统启用原生路径明确配置失败，不自动回退。
 - 先按当前可编译环境实现 Linux；此顺序调整不降低各平台的验收要求。
-- 无地址平台的 identifier 承载可往返的不透明身份，展示名称保留在私有值类型中。现有公共结构无法同时表示独立名称和身份，平台交付文档必须说明。
+- Apple 平台按用户要求在 identifier 显示名称、address 承载系统 UUID 虚拟地址（UNSPECIFIED）。公开地址不是 MAC，平台交付文档必须说明。
 - 静态 Bluetooth_Enabled 没有实例错误通道，失败仅返回 false；实例方法继续用错误回调诊断。
 - Scan_For 同步等待；回调内停止扫描和断连仅提交请求，其它会等待的操作报告重入错误。
 - 当前状态、构建命令、测试证据和未验证项见 doc/BLE_BACKENDS.md；不能将模拟服务通过等同于硬件验收。
+
+
+## macOS 实施决策（2026-11-06）
+
+Darwin 原生路径现已接入 CoreBluetooth，iOS / Android 仍配置失败。CoreBluetooth 对象集中于私有
+串行 dispatch queue，delegate 只持有共享状态的弱引用。同步操作通过单个带类型/目标对象的完成请求
+等待；deadline、取消或异步失败撤销整个连接 manager / delegate，隔离迟到完成。
+每次扫描使用独立 manager，停止时撤销扫描 delegate，防止扫描重启后旧广播混入新缓存。
+连接 manager 通过已扫描 UUID 重新获取外设，公开 identifier 显示名称、address 承载 UUID 虚拟地址（UNSPECIFIED），无真实 MAC。
+
+CoreBluetooth 不能区分读响应与通知：正在订阅的特征拒绝同步读取；同时支持 Notify / Indicate 的
+特征拒绝模式指定。CCCD 不允许直接写，精确 ATT MTU、配对和全系统无过滤连接列表明确不支持。
+服务变化报告 GattError 并撤销会话，调用方重新连接和订阅。macOS 实际证据与权限阻碍见能力文档。

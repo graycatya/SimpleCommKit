@@ -75,3 +75,19 @@ if(WIN32 AND MSVC)
     set_tests_properties(ble_winrt_tests PROPERTIES TIMEOUT 10)
     # Hardware probes: --scan or --connect <MAC> (no business-data writes/unpair).
 endif()
+
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+    enable_language(OBJCXX)
+    add_executable(ble_corebluetooth_tests test_corebluetooth.mm
+        "${BLE_ROOT}/src/backends/BleRuntime.cpp")
+    set_target_properties(ble_corebluetooth_tests PROPERTIES OBJCXX_STANDARD 17 OBJCXX_STANDARD_REQUIRED ON)
+    target_include_directories(ble_corebluetooth_tests PRIVATE "${BLE_ROOT}" "${UTIL_ROOT}")
+    target_compile_features(ble_corebluetooth_tests PRIVATE cxx_std_17)
+    target_compile_options(ble_corebluetooth_tests PRIVATE -Wall -Wextra -Werror "$<$<COMPILE_LANGUAGE:OBJCXX>:-fobjc-arc>")
+    target_link_libraries(ble_corebluetooth_tests PRIVATE "-framework CoreBluetooth" "-framework Foundation" Threads::Threads)
+    target_link_options(ble_corebluetooth_tests PRIVATE "LINKER:-sectcreate,__TEXT,__info_plist,${CMAKE_CURRENT_LIST_DIR}/macos-Info.plist")
+    set_property(TARGET ble_corebluetooth_tests APPEND PROPERTY LINK_DEPENDS "${CMAKE_CURRENT_LIST_DIR}/macos-Info.plist")
+    add_test(NAME ble_corebluetooth_tests COMMAND ble_corebluetooth_tests)
+    set_tests_properties(ble_corebluetooth_tests PROPERTIES TIMEOUT 15)
+    # Opt-in hardware scan: ble_corebluetooth_tests --scan
+endif()

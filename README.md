@@ -1,6 +1,6 @@
 # SimpleCommKit
 
-> BLE 原生后端正在分阶段实施。Linux 实验路径可通过 `SIMPLECOMMKIT_BLE_NATIVE=ON` 启用；默认仍使用 SimpleBLE。能力、构建和验证范围见 [BLE 后端说明](doc/BLE_BACKENDS.md)。
+> BLE 原生后端正在分阶段实施。Linux、Windows 和 macOS 实验路径可通过 `SIMPLECOMMKIT_BLE_NATIVE=ON` 启用；默认仍使用 SimpleBLE。能力、构建和验证范围见 [BLE 后端说明](doc/BLE_BACKENDS.md)。
 
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)

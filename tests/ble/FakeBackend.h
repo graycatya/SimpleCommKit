@@ -8,6 +8,7 @@ struct FakeControl {
     std::atomic<uint64_t> generation{1};
     std::atomic<bool> scanning{false}, connected{false}, stopped{false}, blockRead{false}, reading{false};
     std::vector<Peripheral> devices;
+    std::string selectedId;
     void emit(Event event) { EventSink copy;{std::lock_guard<std::mutex> lock(mutex);copy=sink;}if(copy)copy(std::move(event)); }
     void event(EventType type){emit(Event{type,generation.load()});}
     void advertise(const Peripheral& p){Event e{EventType::Advertisement,generation.load()};e.peripheral=p;emit(std::move(e));}
@@ -30,7 +31,7 @@ public:
     void stopScan(const Operation& o)override{control_->generation=o.generation;if(control_->scanning.exchange(false))control_->event(EventType::ScanStopped);}
     bool scanning(const Operation&)override{return control_->scanning;}
     std::vector<Peripheral> peripherals(DeviceFilter,const Operation&)override{return control_->devices;}
-    void selectPeripheral(const std::string&,const Operation& o)override{selected_=true;control_->generation=o.generation;}
+    void selectPeripheral(const std::string& id,const Operation& o)override{std::lock_guard<std::mutex> lock(control_->mutex);control_->selectedId=id;selected_=true;control_->generation=o.generation;}
     void connect(const Operation& o)override{if(!selected_)throw Failure(ErrorCodes::SimpleCommKitBleCurrentPeripheralNotSet);control_->generation=o.generation;control_->connected=true;control_->event(EventType::Connected);}
     void disconnect(const Operation& o)override{control_->generation=o.generation;control_->connected=false;control_->event(EventType::Disconnected);}
     bool connected(const Operation&)override{return control_->connected;}

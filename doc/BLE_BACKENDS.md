@@ -2,8 +2,8 @@
 
 ## 当前阶段
 
-本次提交实现公共私有后端契约、调度与假后端测试，以及 **Linux BlueZ 实验路径**。
-它不是全平台迁移完成的发布版本。默认仍使用原有 SimpleBLE；Windows 已提供扫描及连接/GATT 实验实现（见下文）；Apple、Android
+当前已实现公共私有后端契约、调度与假后端测试，以及 Linux BlueZ、Windows WinRT 和 macOS CoreBluetooth 实验路径。
+它不是全平台迁移完成的发布版本。默认仍使用原有 SimpleBLE；Windows、macOS 已提供扫描及连接/GATT 实验实现（见下文）；iOS、Android
 原生后端未实现，不允许通过原生开关静默回退。最终移除 SimpleBLE 的任务保持未完成。
 
 ## 构建与验证
@@ -33,14 +33,15 @@ Python 扩展使用 `-DENABLE_SIMPLECOMMKITPYBIND=ON -DCMAKE_POSITION_INDEPENDEN
 | --- | --- | --- | --- |
 | Linux | C++17、CMake 3.21；libdbus >= 1.12；BlueZ 5.x 的 Adapter1/Device1/GATT API | GNU 15.2、CMake 4.2.3、libdbus 1.16.2 下静态/动态库、示例、Python 扩展编译；独立 D-Bus 模拟服务通过 | 未验证；最低 BlueZ 实机版本尚未固定 |
 | Windows | Windows 10 2004 / SDK 19041+，MSVC C++17 | 扫描/连接/GATT 已实现，x64 静态库和示例构建通过 | UAF028 连接、发现、读取、订阅/退订、重连通过；写入/通知载荷/故障场景待验 |
-| macOS / iOS | 待固定 SDK、部署版本及 OBJCXX 工具链 | 原生未实现 | 未验证 |
+| macOS | macOS 10.15+（arm64 11+），C++17 / Objective-C++ ARC；CoreBluetooth、Foundation | Apple Clang 21 / SDK 26.5，arm64 静态/动态库、C++ 示例与 Python 3.12 扩展通过；模拟 delegate 会话通过 | 原 C++ 示例完成 IM948-V3.05 两次连接会话、状态读取、Notify / Write Command、23 个传感器数据包及参数恢复；故障场景待验 |
+| iOS | 待固定 SDK、部署版本及 OBJCXX 工具链 | 原生未接入 | 未验证 |
 | Android | 待固定 API/NDK、Java 打包及 Context 初始化入口 | 原生未实现 | 未验证 |
 
 ## 公共契约
 
 - `SimpleCommKitBleCentral.h` 的类、结构体、签名保持不变；新增错误码从原 BLE 子码 15 开始。
 - Linux 适配器 `dev_identifier` 使用对象路径，`dev_address` 使用系统地址。设备选择优先使用非空地址及地址类型；内部缓存按对象路径去重。
-- 对未来不提供地址的平台，`identifier` 必须承载可往返的原生身份，address 为空且类型为 UNSPECIFIED。现有结构无法同时增加独立的展示名称，内部保留 name；这项展示差异需在该平台交付时说明。
+- 外设 `identifier` 显示设备名称。macOS 使用 `CBPeripheral.identifier.UUIDString` 作为 `address` 的平台虚拟地址，`address_type=UNSPECIFIED`；它不是 MAC。按虚拟地址选择和去重，同名及无名称设备仍可区分；iOS 后续接入沿用此约定。
 - 同步平台操作默认 deadline 为 30 秒；取消以独立标志传播。用户回调串行、锁外执行，系统线程只传递值，不调用用户代码。
 - 回调内允许查询、请求停止扫描及请求断连；可能阻塞的扫描、连接、GATT 和设备切换报告 ReentrantOperation。回调内停止/断连为排队请求。
 - `adapter_Scan_For(ms)` 同步等待，等待期间不占用操作线程；负值无效，零开始后立即停止。停止幂等，缓存保留。
@@ -91,7 +92,7 @@ Linux 命令与监视各持有独立私有 D-Bus 连接。通知直接接收 Pro
 后续应通过真机压力测试确定是否改成完整增量对象缓存。
 
 尚需验证/实现：真实权限拒绝、多适配器切换的真实状态同步、BlueZ 服务重启后的自动恢复、连接超时清理的真实系统行为、
-断连与重连的全部竞态，以及 Windows 剩余故障/数据会话验收和 Apple/Android 平台的原生实现。
+断连与重连的全部竞态，以及 Windows 剩余故障/数据会话验收和 macOS 硬件验收及 iOS/Android 平台的原生实现。
 因此任务 4.1–4.3 仍未整体勾选，不能声明完整 Linux 后端验收。Python 扩展的模拟扫描、读写、通知、取消订阅、常规销毁与回调内销毁已验证；AI 端到端和 Python 解释器退出的全部竞态仍需额外验证。
 
 
@@ -184,3 +185,121 @@ API 依据：[微软 GATT 客户端示例](https://github.com/microsoft/Windows-
 连接探针改为单轮 15 秒扫描，以避免先前连续清空短扫描缓存导致漏掉较弱信号设备；普通 `--scan` 仍为三轮 2 秒。
 独立原生探针及诊断输出保留在本地 build/native-win64/qr380-native-*，不作为公共模块源代码安装。
 项目后端定向探针也通过：两轮连接/断连重连，每轮读取 180a/2a29 均返回 3 字节且保持连接。日志为 build/native-win64/qr380-backend-manufacturer.log。
+
+
+## macOS CoreBluetooth 实施记录（2026-11-06）
+
+`SIMPLECOMMKIT_BLE_NATIVE=ON` 在 Darwin 上选择 Objective-C++ ARC 后端，仅链接系统
+CoreBluetooth / Foundation；不下载或链接 SimpleBLE。iOS 和 Mac Catalyst 尚未接入。
+构建基线为 macOS 10.15+（Apple Silicon 为 11+）、C++17、CMake 3.21+、带对应 SDK 的 Xcode。
+本机证据：macOS 26.6.2 arm64、Xcode 26.6、Apple Clang 21.0.0、macOS SDK 26.5、CMake 4.3.0。
+最低系统仅是编译目标，尚未在旧版系统运行验收。
+
+| 公共方法组 | 实现与边界 |
+| --- | --- |
+| Bluetooth_Enabled / 适配器枚举、选择、状态 | 使用系统默认逻辑适配器 `corebluetooth:default`；地址为空，不枚举物理控制器，不支持多适配器选择。初始化等候状态受 deadline / 取消约束；Unauthorized → PermissionDenied、Unsupported → NotSupported、PoweredOff → BackendUnavailable（电源状态查询为 false） |
+| 电源开关 / 电源事件 | 开关 NotSupported；manager 状态变化映射 On/Off 事件，不主动显示蓝牙电源提醒 |
+| Scan_Start / Stop / For / Is_Active / Results / Found / Updated | LE 扫描允许重复广播，按 UUID 去重；RSSI、厂商 ID 与二进制数据；每轮独立扫描 manager 和弱 delegate，停止时撤销，隔离旧扫描事件。停止幂等且保留结果 |
+| 外设身份与选择 | 公共 identifier 显示广播 LocalName，缺失时使用系统名称；更新无名称时保留本轮已知名称，从未取得名称则为空。address 为 `CBPeripheral.identifier.UUIDString` 平台虚拟地址、类型 UNSPECIFIED；按 UUID 选择和去重，不用名称合并设备。连接在连接 manager 中按 UUID 重新获取句柄；UUID 不是 MAC，不承诺跨电脑或系统重置稳定 |
+| Paired_Peripherals / Connected_Peripherals / Is_Paired / Unpair | NotSupported；CoreBluetooth 的已连接检索需要指定服务 UUID，现有无过滤参数接口无法完整枚举，不能将当前库会话冒充全系统连接列表 |
+| Connect / Disconnect / Is_Connected / 连接事件 | 使用 CBCentralManager 连接、取消及 delegate；断连清空 GATT / 订阅。仅释放本库连接，不承诺断开其它应用。操作超时、取消或异步失败会撤销整个连接 delegate 域，隔离迟到事件；重试需重新连接 |
+| Is_Connectable / Get_Tx_Power | 来自最近扫描广播；未提供字段时 NotSupported，不伪造数值 |
+| Get_Mtu | NotSupported；maximumWriteValueLength 是写入长度上限，不能作为精确 ATT MTU |
+| Services | 发现所有主服务、特征和描述符；UUID 规范化，保留广播中的服务数据和读、两类写入、Notify / Indicate 能力；断连缓存失效。服务变化报告 GattError 并撤销当前连接，调用方重新连接、发现和订阅 |
+| Read（特征） | 原始二进制；没有 Read 能力或当前正在通知时 NotSupported，避免共用 delegate 回调将通知误认为读响应 |
+| Read（描述符） | NSData 原始字节、NSString UTF-8；标准 2900 / 2902 / 2903 的 NSNumber 转为 16 位小端；无法无损转换的其它类型明确 NotSupported |
+| Write_Request / Write_Command | 区分 WithResponse / WithoutResponse；检查特征能力和系统最大写入长度，超长 InvalidArgument。Command 等待系统可发送状态，受 deadline / 取消约束；无远端确认，不自动分包 |
+| Write（描述符） | 系统描述符写入；2902 CCCD 直接写入 NotSupported，须用订阅接口 |
+| Notify / Indicate / Unsubscribe | 检查对应属性；同时支持两种模式时 CoreBluetooth 不能显式选择，返回 NotSupported。系统确认订阅状态，取消时先撤销本地事件；公共层等待在途用户回调退出 |
+
+```sh
+cmake -S . -B build/native-macos \
+  -DENABLE_SIMPLECOMMKIT_BLE=ON -DSIMPLECOMMKIT_BLE_NATIVE=ON \
+  -DENABLE_SIMPLECOMMKIT_TCP=OFF -DENABLE_SIMPLECOMMKIT_UDP=OFF \
+  -DENABLE_SIMPLECOMMKIT_WEBSOCKET=OFF -DSIMPLECOMMKIT_EXAMPLES=ON \
+  -DSIMPLECOMMKIT_BLE_TESTS=ON -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
+cmake --build build/native-macos -j 4
+ctest --test-dir build/native-macos --output-on-failure
+# 显式真机探针：只扫描 5 秒，不连接、不写入、不解除配对。
+build/native-macos/tests/ble/ble_corebluetooth_tests --scan
+```
+
+应用必须在自己的 Info.plist 提供 `NSBluetoothAlwaysUsageDescription`。
+App Sandbox 应用还需 `com.apple.security.device.bluetooth` entitlement。
+命令行示例和扫描探针已通过 Mach-O `__TEXT,__info_plist` 嵌入用途描述；库不会替宿主添加权限或修改
+系统隐私设置。Python、AI 服务需由其实际宿主提供用途描述及权限；不能认为扩展模块中附一份 plist
+就能授权 Python 解释器。首次实际调用会触发系统授权流程；`ShowPowerAlert=NO` 仅关闭电源提醒，
+不会绕过或抑制系统授权。构造和销毁库对象本身延迟初始化，不访问蓝牙或触发权限。
+
+验证范围：
+
+- `build/native-macos`：静态库、原 C++ 示例、公共契约与 CoreBluetooth 专项模拟会话。
+- `build/native-macos-shared`：动态库、原 C++ 示例及 Python 3.12 扩展编译链接；Python 导入及 20 次构造/销毁通过。
+- `build/macos-ble-off`：关闭通信模块的最小库构建通过，不启用 Objective-C++ / CoreBluetooth 检测或 SimpleBLE 下载。
+- 专项测试不构造真实 CBCentralManager，以 Objective-C 代用品驱动真实 delegate / 后端，验证扫描身份、去重、旧扫描隔离、二进制读写、描述符转换、订阅退订、歧义、超时、取消、操作中销毁及服务变化。
+- `build/macos-ble-asan`：AddressSanitizer / UndefinedBehaviorSanitizer 下公共契约和专项模拟会话通过；`ASAN_OPTIONS=detect_leaks=0`，不宣称已完成泄漏检查。
+- 真实扫描：沙箱内返回 NotSupported（65551），沙箱外返回 PermissionDenied（65553）；未取得成功扫描证据，不能判断真实设备发现和连接可用。需在系统隐私设置为实际运行宿主授予蓝牙权限后再次验证。
+
+尚未验收：标准 GATT Read / Write Request / 描述符写入的真实载荷、蓝牙关闭/恢复、真实断连和超时、最低 OS / Intel Mac、
+Python 实际蓝牙会话、两类 AI 消费者端到端、应用签名与打包及 Apple SDK 分发条款。
+5.1–5.3 保持未整体验收；iOS 的编译、权限、生命周期和设备验收需要单独实施。
+
+实现依据为本机 Apple SDK 的 `CBCentralManager.h`、`CBPeripheral.h`、`CBDescriptor.h` 与 `CBError.h`
+中的官方 API 声明和注释（本次网络文档工具不可用，未声称完成在线文档核验）。
+
+
+### 用户真机扫描反馈与显示约定调整（2026-11-06）
+
+用户提供的 C++ 示例日志包含更新回调、停止扫描及 38 个设备结果，证明该用户运行环境的实际扫描路径
+已成功；此证据不替代当前代理宿主的权限结果，也未覆盖连接 / GATT。
+按用户要求，外设 Identifier 改为名称，Address 显示 Apple 平台 UUID 虚拟地址，类型保持 UNSPECIFIED。
+不将 UUID 截断或哈希成六字节 MAC，避免地址碰撞和误认为真实硬件地址。同名设备通过 UUID 区分，
+后续无名称广播保留已知名称；未获得名称的设备显示空 Identifier，仍可通过 UUID 地址选择。
+iOS 后续实现采用相同字段约定，本次未启用 iOS 后端。
+
+### IM948-V3.05 定向读取入口（2026-11-06）
+
+原 C++ 示例新增可选参数 `--scan-seconds 1..300`、`--device-address <地址>`、`--im948-read` 和 `--im948-sensor-read`。
+默认交互流程保留。IM948 模式在服务发现后确认 AE30/AE01 的 Write Command 和 AE30/AE02 的 Notify，
+订阅接收后依次发送 `29`（保持连接）、`10`（状态）、三次 `11`（获取当前已订阅的功能数据），
+打印原始回复、状态/电量、采样时间戳和功能标识，随后退订及断连。功能标识为零时明确提示无传感器字段；
+不自动改订阅配置、校准、主动上报或持久设置。协议依据：[厂商说明书](https://www.yuque.com/cxqwork/lkw3sg/yqa3e0)。
+
+```sh
+build/native-macos/examples/SimpleCommKitBle/SimpleCommKitBleCentralExample/SimpleCommKitBleCentralExample \
+  --scan-seconds 25 --device-address 529EE4D9-CF8D-9BBC-4BB4-FC7611A941AF --im948-read
+```
+
+本机一次 25 秒交互扫描已看到 `im948-V3.05`、上述 UUID、RSSI 约 -35 dBm。
+后续自动选择/读取轮次尚未再次发现目标，未进入连接阶段，不能声称读取或通知已验证。
+探测日志保存在 `build/native-macos/im948-read-session*.log`；后续成功结果需另外追加。
+
+
+### IM948-V3.05 真机读取通过（2026-11-06）
+
+在用户重启设备并恢复广播后，使用 **SimpleCommKitBleCentralExample**（公共 C++ 接口，原生 macOS 静态库）
+完成两次实际连接/发现/通知会话，不再仅是内部后端探针：
+
+- 目标 `im948-V3.05`，Apple UUID `529EE4D9-CF8D-9BBC-4BB4-FC7611A941AF`。
+- 两轮分别发现 4 个服务，AE30 的 AE01 为 Write Command，AE02 为 Notify；还发现 AE3A、AE00 和 180F。
+- 第一轮 `--im948-read`：AE01 发送 `29`，收到 `29` 回复；发送 `10` 收到 33 字节状态，电量 90%、3850 mV、传感器开启、功能标识 0。发送 `11` 并收到含时间戳的 7 字节数据。
+- 第二轮 `--im948-sensor-read`：保存状态中的原参数，通过 `12` 仅把本次会话的功能标识设为 `0x0046`（含重力加速度、角速度、欧拉角），其他参数原样。
+- 收到 **23 个完整的 25 字节传感器通知包**，包头 `11 46 00`，包含时间戳及 18 字节实际数据。
+  示例加速度 `[0.0000, 0.0000, 9.7761] m/s²`，角速度 `[-0.6714, 0.3052, -0.4883] °/s`，
+  初始欧拉角 `[0, 0, 0]°`，后续数据有变化。本轮电量状态 92%、3860 mV；读数不同时间取得，不作为精度校验。
+- 结束前发送保存的原参数，并再次查询 `10`：原参数字节 1–10 完全相同，功能标识恢复为 0。
+  退订、断连正常，两个进程返回 0，日志无 BLE ERROR。未执行校准、归零或保存出厂参数。
+
+此模式仅在显式指定 `--im948-sensor-read` 时临时修改功能订阅，正常结束会恢复并读回核对。
+异常退出或物理断连时无法保证在线恢复，不能把恢复失败报告为成功。
+协议中的 `11` 单次回复与已开启的主动上报格式相同，无法仅凭通知内容区分来源；证据为已发送查询并收到实际数据，
+不声称每一个 `11` 请求都可独立关联某一帧。
+
+```sh
+build/native-macos/examples/SimpleCommKitBle/SimpleCommKitBleCentralExample/SimpleCommKitBleCentralExample \
+  --scan-seconds 25 --device-address 529EE4D9-CF8D-9BBC-4BB4-FC7611A941AF --im948-sensor-read
+```
+
+原始日志：`build/native-macos/im948-read-session-4.log`、`build/native-macos/im948-sensor-read.log`。
+日志逐包检查确认所有 `0x0046` 帧为 25 字节且前后原参数一致；重新构建静态/动态示例、公共契约与 macOS 模拟测试通过。
+尚未把本次 Notify + Write Command 传感器会话当作标准 Read / Write Request、Indicate、全部故障或压力场景的验收。

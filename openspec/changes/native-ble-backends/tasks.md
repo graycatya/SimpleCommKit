@@ -4,7 +4,7 @@
 
 当前完成公共基础层与 Linux 实验路径；通过 `SIMPLECOMMKIT_BLE_NATIVE=ON` 选择。
 原有 SimpleBLE 路径仍保留，不构成最终迁移交付。基于当前 Linux 开发环境，平台实现顺序
-调整为 Linux 优先；Windows 已实施 3.1（进展见文末）；Apple、Android 仍待实现及对应工具链/硬件验证。
+调整为 Linux 优先；Windows 已实施 3.1（进展见文末）；macOS 已接入实验后端（见文末），iOS、Android 仍待实现及对应工具链/硬件验证。
 
 - 已建立 doc/BLE_BACKENDS.md 和 doc/BLE_DEPENDENCIES.md，记录逐方法 Linux 行为、其它平台未实现状态和 libdbus 1.16.2 本机许可原文。
 - 已完成 Linux 静态/动态库、原 C++ 示例与 Python 扩展编译；假后端和独立模拟 BlueZ 总线集成测试通过。
@@ -75,3 +75,33 @@
 - [ ] 非空读写业务载荷、实际通知/指示载荷、解除配对及权限/离线/真实超时/服务变化/操作中销毁故障验收。
 
 3.2 主项保留未勾选：实现已接入，但上述完整硬件验收仍未完成。具体边界和原始结果见 doc/BLE_BACKENDS.md。
+
+
+## macOS 实施进展（2026-11-06）
+
+- [x] 5.1 代码：Objective-C++ ARC CoreBluetooth 后端、逻辑适配器、UUID 无 MAC 身份、扫描去重、每轮扫描 delegate 撤销及权限状态映射。
+- [x] 5.2 代码：连接/断连、主服务/特征/描述符发现、二进制读写、Notify / Indicate / 取消订阅、能力检查、deadline / 取消、服务变化和旧事件域清理。
+- [x] 5.3 macOS 构建接入：仅 Darwin 启用 OBJCXX，PRIVATE 链接系统 frameworks；命令行示例及扫描探针嵌入隐私用途描述。
+- [x] 本机 arm64 静态/动态库、原 C++ 示例、Python 3.12 扩展编译；公共契约及 Objective-C 模拟 delegate 会话测试；Python 导入/构造销毁；BLE 关闭最小构建。
+- [ ] 成功真机扫描/连接/GATT/通知与故障验收：沙箱内探针 NotSupported，沙箱外 PermissionDenied，尚未完成成功数据会话。
+- [ ] Intel / 最低 OS、两类 AI 消费者、真实 Python 会话、应用签名打包及 SDK 分发条款核验。
+- [ ] iOS 原生接入与工具链/真机验证。
+
+5.1–5.3 的主项包含 macOS 与 iOS，以及硬件与打包验收，因此保持未勾选。详细平台限制及实际证据见 doc/BLE_BACKENDS.md。
+
+
+### macOS 扫描反馈与字段调整（2026-11-06）
+
+- [x] 用户提供真机扫描日志：38 个设备、更新回调和停止扫描成功（连接/GATT 尚未提供证据）。
+- [x] 按用户要求 Identifier 显示设备名称，Address 使用平台 UUID 虚拟地址，类型 UNSPECIFIED；同名/无名称设备按 UUID 区分，保留本轮已知名称。
+- [x] 补充后端字段/名称保留测试，以及公共层同名设备按虚拟地址选择和名称歧义回归测试。
+- [ ] iOS 后端尚未实施；后续沿用相同名称/虚拟地址字段约定。
+
+
+### IM948-V3.05 macOS 真机会话（2026-11-06）
+
+- [x] 原 C++ 示例通过 25 秒扫描选择目标，两次连接、4 个服务发现、AE01 Write Command / AE02 Notify 会话。
+- [x] 保持连接和状态查询回复，23 个完整传感器通知包，解析加速度、角速度和欧拉角。
+- [x] 临时功能订阅 0x0046，其他参数原样；测试结束恢复原标识 0，并读回确认原参数字节完全一致；正常退订和断连。
+- [x] 日志及范围追加至 doc/BLE_BACKENDS.md；静态/动态示例重建，公共契约和 macOS 模拟测试通过。
+- [ ] 标准 GATT Read / Write Request、Indicate、描述符写入及真实故障/压力场景仍需单独验收；iOS 尚未接入。

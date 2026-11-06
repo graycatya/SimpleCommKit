@@ -48,7 +48,30 @@ bool readChoice(char& choice) {
     return true;
 }
 
-int main() {
+#include "Im948ReadProbe.hpp"
+
+int main(int argc, char** argv) {
+    int scan_ms = 15000;
+    std::string targetAddress;
+    bool im948Read = false, im948Sensors = false;
+    try {
+        for (int arg = 1; arg < argc; ++arg) {
+            const std::string option = argv[arg];
+            if (option == "--im948-sensor-read") { im948Read = true; im948Sensors = true; continue; }
+            if (option == "--im948-read") { im948Read = true; continue; }
+            if (++arg >= argc) throw std::invalid_argument("missing value");
+            if (option == "--device-address") { targetAddress = argv[arg]; continue; }
+            if (option != "--scan-seconds") throw std::invalid_argument("option");
+            size_t consumed = 0;
+            const auto seconds = std::stoi(argv[arg], &consumed);
+            if (consumed != std::string(argv[arg]).size() || seconds < 1 || seconds > 300)
+                throw std::invalid_argument("scan duration");
+            scan_ms = seconds * 1000;
+        }
+    } catch (const std::exception&) {
+        std::cerr << "Usage: " << argv[0] << " [--scan-seconds 1..300] [--device-address address] [--im948-read | --im948-sensor-read]" << std::endl;
+        return EXIT_FAILURE;
+    }
     consoleOut() << "=== SimpleCommKitBleCentral ===" << std::endl;
     std::atomic<bool> connected_callback_triggered{false};
     std::atomic<bool> disconnected_callback_triggered{false};
@@ -104,7 +127,7 @@ int main() {
         consoleError() << "Bluetooth is not enabled. Please enable Bluetooth and try again." << std::endl;
     }
 
-    central.adapter_Scan_For(15000);
+    central.adapter_Scan_For(scan_ms);
 
     std::vector<SimpleCommKitBlePeripheral> scan_results =  central.adapter_Get_Scan_Results();
     for (size_t i = 0; i < scan_results.size(); ++i) {
@@ -148,7 +171,16 @@ int main() {
         consoleError() << "No peripherals found; aborting." << std::endl;
         return EXIT_FAILURE;
     }
-    selection = SimpleCommKitTestUtils::getUserInputInt("Please select a Peripheral", scan_results.size() - 1);
+    if (targetAddress.empty()) {
+        selection = SimpleCommKitTestUtils::getUserInputInt("Please select a Peripheral", scan_results.size() - 1);
+    } else {
+        selection.reset();
+        for (size_t i = 0; i < scan_results.size(); ++i) if (scan_results[i].address == targetAddress) {
+            if (selection.has_value()) { consoleError() << "Ambiguous target address" << std::endl; return EXIT_FAILURE; }
+            selection = static_cast<int>(i);
+        }
+        if (!selection.has_value()) consoleError() << "Target address not found: " << targetAddress << std::endl;
+    }
     if (!selection.has_value()) {
         return EXIT_FAILURE;
     }
@@ -237,6 +269,8 @@ int main() {
             }
         }
     }
+
+    if (im948Read) return readIm948(central, services, im948Sensors) ? EXIT_SUCCESS : EXIT_FAILURE;
 
     // ============================================
     // Characteristic Read/Write Operations

@@ -55,6 +55,22 @@ void facade(){
     CHECK(notifications==1);
     central.adapter_Scan_For(0);until([&]{return stop==2;});CHECK(start==2);
 }
+void platformAddressSelection(){
+    SimpleCommKitBleCentral central;auto control=fake;
+    std::atomic<int> found{0};std::atomic<ErrorCode> error{0};
+    central.set_Callback_Error([&](ErrorCode code){error=code;});
+    central.set_CurrentAdapter(central.get_Adapters().front());
+    central.adapter_Set_Callback_On_Scan_Found([&](auto){++found;});
+    central.adapter_Scan_Start();until([&]{return central.adapter_Scan_Is_Active();});
+    auto a=device();a.value.identifier="same-name";a.value.address="01234567-89AB-CDEF-0123-456789ABCDEF";
+    auto b=a;b.id="second-device";b.value.address="11234567-89AB-CDEF-0123-456789ABCDEF";
+    auto unnamed=a;unnamed.id="unnamed-device";unnamed.value.identifier="";unnamed.value.address="21234567-89AB-CDEF-0123-456789ABCDEF";
+    control->advertise(a);control->advertise(b);control->advertise(unnamed);until([&]{return found==3;});
+    auto nameOnly=a.value;nameOnly.address.clear();central.set_CurrentPeripheral(nameOnly);
+    until([&]{return error==ErrorCodes::SimpleCommKitBleAmbiguousIdentity;});error=0;
+    central.set_CurrentPeripheral(b.value);{std::lock_guard<std::mutex> lock(control->mutex);CHECK(control->selectedId==b.id);}central.peripheral_Connect();CHECK(central.peripheral_Is_Connected());CHECK(error==0);
+    central.set_CurrentPeripheral(unnamed.value);{std::lock_guard<std::mutex> lock(control->mutex);CHECK(control->selectedId==unnamed.id);}central.peripheral_Connect();CHECK(central.peripheral_Is_Connected());CHECK(error==0);
+}
 void destruction(){
     auto central=std::make_unique<SimpleCommKitBleCentral>();auto control=fake;
     central->set_CurrentAdapter(central->get_Adapters().front());
@@ -80,4 +96,4 @@ void destroyWhileReading(){
     until([&]{return control->reading.load();});
     central.reset();caller.join();CHECK(control->stopped);
 }
-int main(){try{runtime();facade();destruction();reentryAndCancellation();destroyWhileReading();std::cout<<"native BLE contract tests passed\n";}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}
+int main(){try{runtime();facade();platformAddressSelection();destruction();reentryAndCancellation();destroyWhileReading();std::cout<<"native BLE contract tests passed\n";}catch(const std::exception& e){std::cerr<<e.what()<<'\n';return 1;}}

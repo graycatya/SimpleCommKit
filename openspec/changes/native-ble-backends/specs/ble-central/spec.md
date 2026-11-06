@@ -18,7 +18,7 @@
 
 #### Scenario: 平台不提供 MAC
 - **WHEN** 系统只提供不透明身份
-- **THEN** 设备仍可选择和连接，address 留空，address_type 为 UNSPECIFIED
+- **THEN** identifier 显示设备名称，address 承载平台原生 UUID 虚拟地址，address_type 为 UNSPECIFIED；设备仍可按虚拟地址选择和连接，同名设备不得合并
 
 #### Scenario: 不支持或权限拒绝
 - **WHEN** 电源、配对、解除配对、MTU、TX power 或多适配器操作不可用或权限不足
