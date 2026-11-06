@@ -37,11 +37,12 @@ inline bool readIm948(SimpleCommKit::SimpleCommKitBleCentral& central,
         std::lock_guard<std::mutex> lock(capture->mutex);
         capture->frames.push_back(std::move(data));
     });
-    auto query = [&](uint8_t tag, size_t minLength) -> std::vector<uint8_t> {
+    auto query = [&](uint8_t tag, size_t minLength,
+                     const std::vector<uint8_t>& command = {}) -> std::vector<uint8_t> {
         size_t start;
         { std::lock_guard<std::mutex> lock(capture->mutex); start = capture->frames.size(); }
         consoleOut() << "[IM948 TX COMMAND] " << unsigned(tag) << std::endl;
-        central.peripheral_Write_Command(service, tx, {tag});
+        central.peripheral_Write_Command(service, tx, command.empty() ? std::vector<uint8_t>{tag} : command);
         const auto end = std::chrono::steady_clock::now() + std::chrono::seconds(4);
         while (std::chrono::steady_clock::now() < end && !capture->error) {
             { std::lock_guard<std::mutex> lock(capture->mutex);
@@ -75,11 +76,13 @@ inline bool readIm948(SimpleCommKit::SimpleCommKitBleCentral& central,
         restore.action = [&, original] {
             consoleOut() << "[IM948 RESTORE] Restoring original subscription and parameters" << std::endl;
             if (!central.peripheral_Is_Connected()) { passed = false; return; }
-            central.peripheral_Write_Command(service, tx, original);
+            // Wait for the parameter command acknowledgement before querying status.
+            // Write Command completion alone does not mean the device has applied it.
+            const bool acknowledged = !query(0x12, 1, original).empty();
             auto restored = query(0x10, 33);
             // Status byte 4 contains live flags (sensor/report state). Compare
             // the three configuration bits and every other parameter byte.
-            bool same = restored.size() >= 33;
+            bool same = acknowledged && restored.size() >= 33;
             for (size_t i = 1; same && i < original.size(); ++i)
                 same = i == 4 ? ((restored[i] & 7) == (original[i] & 7)) : restored[i] == original[i];
             passed = passed && same;
@@ -87,8 +90,8 @@ inline bool readIm948(SimpleCommKit::SimpleCommKitBleCentral& central,
                 "[IM948 RESTORE FAIL] Original parameters could not be verified") << std::endl;
         };
         consoleOut() << "[IM948 TEMP] Subscription mask=0x0046; other parameters preserved" << std::endl;
-        central.peripheral_Write_Command(service, tx, temporary);
-        auto configured = query(0x10, 33);
+        const bool acknowledged = !query(0x12, 1, temporary).empty();
+        auto configured = acknowledged ? query(0x10, 33) : std::vector<uint8_t>{};
         passed = !configured.empty() && configured[9] == 0x46 && configured[10] == 0;
     }
     auto sample = passed ? query(0x11, 7) : std::vector<uint8_t>{};
