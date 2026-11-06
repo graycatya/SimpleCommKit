@@ -132,3 +132,59 @@ inline bool readIm948(SimpleCommKit::SimpleCommKitBleCentral& central,
         "[IM948 FAIL] Read session incomplete") << std::endl;
     return passed;
 }
+
+// Unified public-API probe. No undocumented AE10 writes or indication triggers.
+inline bool testIm948(SimpleCommKit::SimpleCommKitBleCentral& central,
+                     std::vector<SimpleCommKit::SimpleCommKitBleService> services) {
+    const std::string service = "0000ae30-0000-1000-8000-00805f9b34fb";
+    const std::string read = "0000ae10-0000-1000-8000-00805f9b34fb";
+    const std::string indicate = "0000ae05-0000-1000-8000-00805f9b34fb";
+    auto error = std::make_shared<std::atomic<SimpleCommKit::ErrorCode>>(0);
+    auto reportError = [error](auto code) {
+        error->store(code);
+        consoleError() << "[IM948 TEST ERROR] " << code << std::endl;
+    };
+    bool passed = true;
+    for (int cycle = 1; passed && cycle <= 2; ++cycle) {
+        central.set_Callback_Error(reportError);
+        error->store(0);
+        consoleOut() << "[IM948 TEST] Cycle " << cycle << "/2" << std::endl;
+        if (cycle > 1) {
+            central.peripheral_Connect();
+            if (!central.peripheral_Is_Connected() || error->load()) { passed = false; break; }
+            services = central.peripheral_Services();
+        }
+        bool canRead = false, canIndicate = false;
+        for (const auto& s : services) if (s.uuid == service)
+            for (const auto& c : s.characteristics) {
+                if (c.uuid == read) canRead = c.can_read;
+                if (c.uuid == indicate) canIndicate = c.can_indicate;
+            }
+        if (!canRead || !canIndicate || error->load()) {
+            consoleError() << "[IM948 TEST FAIL] Missing AE10 Read or AE05 Indicate capability" << std::endl;
+            passed = false; break;
+        }
+        auto value = central.peripheral_Read(service, read);
+        passed = !error->load() && central.peripheral_Is_Connected();
+        consoleOut() << "[IM948 TEST AE10] bytes=" << value.size() << std::endl;
+        if (!passed) break;
+        auto count = std::make_shared<std::atomic<unsigned>>(0);
+        central.peripheral_Indicate(service, indicate, [count](auto) { ++*count; });
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+        central.peripheral_Unsubscribe(service, indicate);
+        const auto after = count->load();
+        std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        passed = !error->load() && count->load() == after && central.peripheral_Is_Connected();
+        consoleOut() << "[IM948 TEST AE05] subscribe/unsubscribe=" << (passed ? "PASS" : "FAIL")
+                     << " payloads=" << after << " (payload delivery requires a device trigger)" << std::endl;
+        if (passed) passed = readIm948(central, services, true);
+        // readIm948 restores parameters, unsubscribes and disconnects each cycle.
+    }
+    central.set_Callback_Error(reportError);
+    if (central.peripheral_Is_Connected()) central.peripheral_Disconnect();
+    passed = passed && !error->load() && !central.peripheral_Is_Connected();
+    consoleOut() << (passed ? "[IM948 TEST PASS] Two public-API sessions completed" :
+        "[IM948 TEST FAIL] Unified session incomplete") << std::endl;
+    consoleOut() << "[IM948 TEST SKIP] Write Request: AE10 write protocol unconfirmed; long-duration stability not tested" << std::endl;
+    return passed;
+}

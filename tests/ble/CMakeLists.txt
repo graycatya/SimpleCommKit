@@ -1,6 +1,11 @@
 cmake_minimum_required(VERSION 3.21)
 project(SimpleCommKitBleContractTests LANGUAGES CXX)
 enable_testing()
+add_executable(ble_android_scan_tests test_android_scan.cpp)
+target_include_directories(ble_android_scan_tests PRIVATE
+    ../../src/SimpleCommKitBle/src/backends ../../src/SimpleCommKitBle ../../src/SimpleCommKitUtil)
+target_compile_features(ble_android_scan_tests PRIVATE cxx_std_17)
+add_test(NAME ble_android_scan_tests COMMAND ble_android_scan_tests)
 find_package(Threads REQUIRED)
 set(BLE_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../src/SimpleCommKitBle")
 set(UTIL_ROOT "${CMAKE_CURRENT_LIST_DIR}/../../src/SimpleCommKitUtil")

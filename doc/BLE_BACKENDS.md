@@ -1,5 +1,13 @@
 # BLE 原生后端实施与能力矩阵
 
+## Android 更新（2026-11-07）
+
+已新增 Kotlin/JNI 原生实验后端：扫描、BluetoothGatt 连接/服务发现、特征/描述符读写、
+Notify/Indicate 订阅退订、MTU 和断连重连。CLS-AL00 / Android 12 复用原
+Im948ReadProbe.hpp 完成两轮 IM948 传感器会话，原参数恢复验证通过。
+实际 Write Request/Indicate 数据及故障/其它版本仍待验收；详见 [BLE_ANDROID.md](BLE_ANDROID.md)。
+以下各阶段记录保留其当时的范围，本节更新其中“Android 尚未实施”的历史状态。
+
 ## 当前阶段
 
 当前已实现公共私有后端契约、调度与假后端测试，以及 Linux BlueZ、Windows WinRT 和 macOS CoreBluetooth 实验路径。

@@ -1,5 +1,25 @@
 # Tasks
 
+## Android IM948 统一测试（2026-11-07）
+
+- [x] Kotlin BluetoothGatt 串行连接/发现、特征与描述符读写、CCCD 订阅退订、MTU 协商。
+- [x] C++ Operation deadline/取消桥接、连接代次隔离、失败关闭 GATT、服务变化处理。
+- [x] 测试 App 复用原 Im948ReadProbe.hpp 的 testIm948()，显式 device_address 启用。
+- [x] Android 12 真机两轮 AE10 Read、AE05 订阅退订、IM948 命令/通知、原参数恢复和重连通过。
+- [ ] 实际 Write Request/Indicate 数据、故障/压力、其它版本及最低 API 的真机验收。
+
+6.2/6.3 已有实现和真机证据，主任务仍保留剩余验收项；详见 doc/BLE_ANDROID.md。
+
+## Android Kotlin 扫描阶段（2026-11-07）
+
+- [x] Kotlin/JNI 初始化、适配器、扫描、权限映射、epoch/handle 回调隔离。
+- [x] NDK 25.1 / API 23 两个 ABI 共享库、Kotlin 2.3.10 AAR 和 JNI 签名校验。
+- [x] Android 12 真机：两轮扫描发现 IM948，停止后事件检查和 20 次创建/销毁通过。
+- [x] 修复首次选择适配器前的扫描状态检查；3 项主机回归通过。
+- [ ] 权限拒绝/撤销、蓝牙切换、BluetoothGatt 连接/读写/订阅、IM948 完整会话。
+
+6.1–6.3 主项保持未完成，接入与真机证据见 doc/BLE_ANDROID.md。
+
 ## 实施记录（2026-11-05）
 
 当前完成公共基础层与 Linux 实验路径；通过 `SIMPLECOMMKIT_BLE_NATIVE=ON` 选择。

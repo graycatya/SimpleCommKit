@@ -25,7 +25,14 @@ set(HEADERS
 
 
 if(SIMPLECOMMKIT_BLE_NATIVE)
-    if(WIN32)
+    if(ANDROID)
+        if(ANDROID_PLATFORM_LEVEL AND ANDROID_PLATFORM_LEVEL LESS 23)
+            message(FATAL_ERROR "Native Android BLE requires API 23 or newer")
+        endif()
+        set(BLE_PLATFORM_SOURCE src/backends/android/AndroidBackend.cpp)
+        # Package these sources in the host App; CMake does not compile Kotlin.
+        install(DIRECTORY android/ DESTINATION share/SimpleCommKitBle/android)
+    elseif(WIN32)
         if(NOT MSVC)
             message(FATAL_ERROR "Native Windows BLE requires MSVC and Windows SDK C++/WinRT headers")
         endif()
@@ -54,7 +61,7 @@ if(SIMPLECOMMKIT_BLE_NATIVE)
         set_source_files_properties(${BLE_PLATFORM_SOURCE} PROPERTIES COMPILE_OPTIONS "-fobjc-arc")
         set(BLE_PLATFORM_LIBRARIES ${BLE_COREBLUETOOTH} ${BLE_FOUNDATION})
     else()
-        message(FATAL_ERROR "Native BLE supports Linux, Windows and macOS; iOS/Android backends are pending")
+        message(FATAL_ERROR "Native BLE supports Linux, Windows, macOS and Android; iOS is pending")
     endif()
     set(PRIVATE_SOURCES
         src/backends/BleCentralNative.cpp

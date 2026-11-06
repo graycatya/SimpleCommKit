@@ -53,10 +53,11 @@ bool readChoice(char& choice) {
 int main(int argc, char** argv) {
     int scan_ms = 15000;
     std::string targetAddress;
-    bool im948Read = false, im948Sensors = false;
+    bool im948Read = false, im948Sensors = false, im948Test = false;
     try {
         for (int arg = 1; arg < argc; ++arg) {
             const std::string option = argv[arg];
+            if (option == "--im948-test") { im948Test = true; continue; }
             if (option == "--im948-sensor-read") { im948Read = true; im948Sensors = true; continue; }
             if (option == "--im948-read") { im948Read = true; continue; }
             if (++arg >= argc) throw std::invalid_argument("missing value");
@@ -69,7 +70,7 @@ int main(int argc, char** argv) {
             scan_ms = seconds * 1000;
         }
     } catch (const std::exception&) {
-        std::cerr << "Usage: " << argv[0] << " [--scan-seconds 1..300] [--device-address address] [--im948-read | --im948-sensor-read]" << std::endl;
+        std::cerr << "Usage: " << argv[0] << " [--scan-seconds 1..300] [--device-address address] [--im948-read | --im948-sensor-read | --im948-test]" << std::endl;
         return EXIT_FAILURE;
     }
     consoleOut() << "=== SimpleCommKitBleCentral ===" << std::endl;
@@ -270,6 +271,7 @@ int main(int argc, char** argv) {
         }
     }
 
+    if (im948Test) return testIm948(central, services) ? EXIT_SUCCESS : EXIT_FAILURE;
     if (im948Read) return readIm948(central, services, im948Sensors) ? EXIT_SUCCESS : EXIT_FAILURE;
 
     // ============================================

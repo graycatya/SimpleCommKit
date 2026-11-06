@@ -1,5 +1,12 @@
 # BLE 后端依赖记录
 
+## Android 扫描阶段更新（2026-11-07）
+
+使用 NDK 25.1.8937393、API 23、compileSdk 35、JDK 21、Kotlin 2.3.10；
+自有 Kotlin/JNI 桥接不链接 SimpleBLE。AAR 随附 libc++_shared.so、NDK NOTICE/
+NOTICE.toolchain 和项目 LICENSE；Kotlin 标准库由宿主 Gradle 管理，避免重复类。
+生产分发核验尚未完成；接入及 Android 12 真机扫描证据见 BLE_ANDROID.md。
+
 ## 范围
 
 当前为 Linux / Windows / macOS 原生实验路径；默认旧路径仍使用 SimpleBLE 0.12.1，既有许可说明仍适用。
