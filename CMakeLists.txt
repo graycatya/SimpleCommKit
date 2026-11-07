@@ -46,7 +46,6 @@ option(SIMPLECOMMKIT_EXAMPLES "SimpleCommKit Build all modules examples" OFF)
 option(ENABLE_SIMPLECOMMKITPYBIND "Enable SimpleCommKitPyBind" OFF)
 option(ENABLE_SIMPLECOMMKITAI_FASTMCPP "Enable SimpleCommKitAiFastmcpp" OFF)
 option(ENABLE_SIMPLECOMMKIT_BLE "Enable SimpleCommKitBle" OFF)
-option(SIMPLECOMMKIT_BLE_NATIVE "Use experimental native BLE backend (Linux/Windows/macOS)" OFF)
 option(SIMPLECOMMKIT_BLE_TESTS "Build native BLE contract tests" OFF)
 option(ENABLE_SIMPLECOMMKIT_HID "Enable SimpleCommKitHid" OFF)
 option(ENABLE_SIMPLECOMMKIT_USB "Enable SimpleCommKitUsb" OFF)
@@ -107,7 +106,6 @@ include(DownloadUnzipProject)
 
 
 set(3RDPARTY_ZIPS
-    simpleble
     libusb-cmake
     CSerialPort
     hidapi
@@ -211,14 +209,7 @@ if(CMAKE_SYSTEM_NAME MATCHES "IOS")
     set(ENABLE_SIMPLECOMMKIT_USB OFF CACHE BOOL "ENABLE_SIMPLECOMMKIT_USB OFF" FORCE)
 endif()
 
-if(ENABLE_SIMPLECOMMKIT_BLE)
-    if(SIMPLECOMMKIT_BLE_NATIVE)
-        list(REMOVE_ITEM 3RDPARTY_ZIPS simpleble)
-    endif()
-else()
-    list(REMOVE_ITEM 3RDPARTY_ZIPS
-        simpleble
-    )
+if(NOT ENABLE_SIMPLECOMMKIT_BLE)
     list(REMOVE_ITEM SRC_MODULES
         SimpleCommKitBle
         SimpleCommKitPyBle
@@ -424,10 +415,6 @@ include(ExecuteDownloadProjects)
 foreach(3RDPARTY ${3RDPARTY_ZIPS})
     if("${3RDPARTY}" IN_LIST IS_CUSTOM_BUILDS_PROJECT)
         add_subdirectory(${BUILDSCRIPTS_PATH}/${3RDPARTY})
-    elseif("${3RDPARTY}" STREQUAL "simpleble")
-        include(${3RDPARTY_PATH}/simpleble/cmake/prelude.cmake)
-        include(${3RDPARTY_PATH}/simpleble/cmake/epilogue.cmake)
-        add_subdirectory(${3RDPARTY_PATH}/simpleble/simpleble)
     else()
         add_subdirectory(${3RDPARTY_PATH}/${3RDPARTY})
     endif()

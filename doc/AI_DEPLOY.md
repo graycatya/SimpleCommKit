@@ -1,6 +1,6 @@
 # SimpleCommKitAi 部署指南
 
-> BLE 原生后端正在分阶段实施。Linux 实验路径可通过 `SIMPLECOMMKIT_BLE_NATIVE=ON` 启用；默认仍使用 SimpleBLE。能力、构建和验证范围见 [BLE 后端说明](BLE_BACKENDS.md)。
+> BLE uses only in-house platform backends; SimpleBLE is no longer downloaded or linked. See [BLE backends](BLE_BACKENDS.md) for capabilities and validation limits.
 
 
 > **版本**: 0.1.1  
@@ -367,7 +367,7 @@ SimpleCommKitAiBle (Python 源码，@mcp.tool 装饰器)
        ▼ import SimpleCommKitPyBle（pybind11 绑定）
 SimpleCommKitBle (C++ 原生库)
        │
-       ▼ SimpleBLE
+       ▼ Native platform BLE
 ```
 
 ### 全部 11 个 Python MCP 模块
@@ -606,7 +606,7 @@ asyncio.run(main())
 
 | 模块 | 二进制文件名 | 默认端口 | 协议栈 |
 |------|-------------|:------:|--------|
-| BLE | `simplecommkitaible-fastmcpp` | 8003 | SimpleBLE |
+| BLE | `simplecommkitaible-fastmcpp` | 8003 | Native platform BLE |
 | HID | `simplecommkitaihid-fastmcpp` | 8004 | hidapi |
 | SerialPort | `simplecommkitaiserialport-fastmcpp` | 8005 | CSerialPort |
 | TCP Client | `simplecommkitaitcpclient-fastmcpp` | 8006 | libhv |

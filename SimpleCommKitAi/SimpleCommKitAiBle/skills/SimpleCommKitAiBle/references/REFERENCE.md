@@ -15,7 +15,7 @@ AI Agent (Cursor / Claude Code / Windsurf)
 ├──────────────────────────┤
 │  SimpleCommKitBle        │  ← C++ BLE abstraction
 ├──────────────────────────┤
-│  SimpleBLE               │  ← Cross-platform BLE
+│  Native BLE backends     │  ← Cross-platform BLE
 │  WinRT / CoreBT / BlueZ  │
 └──────────────────────────┘
 ```

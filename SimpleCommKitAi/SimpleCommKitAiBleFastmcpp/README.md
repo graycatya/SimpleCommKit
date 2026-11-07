@@ -19,7 +19,7 @@ AI Agent (MCP Client)
 ├──────────────────────────────────┤
 │  SimpleCommKitBle (C++ BLE lib)  │
 ├──────────────────────────────────┤
-│  SimpleBLE (cross-platform BLE)  │
+│  Native platform BLE backends  │
 └──────────────────────────────────┘
 ```
 

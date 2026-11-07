@@ -22,7 +22,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC
     SimpleCommKitUtil
 )
 
-if(SIMPLECOMMKIT_BLE_NATIVE AND CMAKE_SYSTEM_NAME STREQUAL "Darwin")
+if(CMAKE_SYSTEM_NAME STREQUAL "Darwin")
     target_link_options(${PROJECT_NAME} PRIVATE
         "LINKER:-sectcreate,__TEXT,__info_plist,${CMAKE_CURRENT_SOURCE_DIR}/Info.plist")
     set_property(TARGET ${PROJECT_NAME} APPEND PROPERTY LINK_DEPENDS "${CMAKE_CURRENT_SOURCE_DIR}/Info.plist")

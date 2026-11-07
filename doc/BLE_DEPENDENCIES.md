@@ -9,9 +9,7 @@ NOTICE.toolchain 和项目 LICENSE；Kotlin 标准库由宿主 Gradle 管理，�
 
 ## 范围
 
-当前为 Linux / Windows / macOS 原生实验路径；默认旧路径仍使用 SimpleBLE 0.12.1，既有许可说明仍适用。
-开启 `SIMPLECOMMKIT_BLE_NATIVE` 后依赖列表中删除 SimpleBLE，不下载、编译或链接它。
-这不代表仓库中已缓存的旧源码/zip 自动删除，也不代表全平台迁移已完成。
+BLE uses only in-house Linux / Windows / macOS / Android backends. SimpleBLE is no longer downloaded, built or linked. Existing local source/zip caches are not automatically deleted. Platform validation limits still apply.
 
 | 组件 | 类别与实际版本 | 来源/许可依据 | 授权选择、修改及分发 |
 | --- | --- | --- | --- |

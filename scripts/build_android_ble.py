@@ -63,7 +63,7 @@ for abi in args.abi or ['arm64-v8a', 'x86_64']:
         '-DCMAKE_TOOLCHAIN_FILE=' + str(args.ndk / 'build/cmake/android.toolchain.cmake'),
         '-DANDROID_ABI=' + abi, '-DANDROID_PLATFORM=android-23', '-DANDROID_STL=c++_shared',
         '-DCMAKE_BUILD_TYPE=Debug', '-DENABLE_SIMPLECOMMKIT_BLE=ON',
-        '-DSIMPLECOMMKIT_BLE_NATIVE=ON', '-DSIMPLECOMMKIT_BUILD_SHARED_LIBS=ON',
+        '-DSIMPLECOMMKIT_BUILD_SHARED_LIBS=ON',
         '-DENABLE_SIMPLECOMMKIT_TCP=OFF', '-DENABLE_SIMPLECOMMKIT_UDP=OFF',
         '-DENABLE_SIMPLECOMMKIT_WEBSOCKET=OFF')
     run('cmake', '--build', build, '--parallel', '4')

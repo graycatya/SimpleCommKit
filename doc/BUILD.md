@@ -1,6 +1,6 @@
 # SimpleCommKit 构建指南
 
-> BLE 原生后端正在分阶段实施。Linux、Windows 和 macOS 实验路径可通过 `SIMPLECOMMKIT_BLE_NATIVE=ON` 启用；默认仍使用 SimpleBLE。能力、构建和验证范围见 [BLE 后端说明](BLE_BACKENDS.md)。
+> BLE uses only in-house platform backends; SimpleBLE is no longer downloaded or linked. See [BLE backends](BLE_BACKENDS.md) for capabilities and validation limits.
 
 
 > **版本**: 0.1.1  
@@ -55,7 +55,6 @@
 |--------|------|------|----------|
 | **libhv** | 1.3.4 | 跨平台网络库（TCP/UDP/WebSocket/MQTT） | Tcp, Udp, WebSocket, MqttClient |
 | **libuv** | 1.52.0 | libhv 底层事件循环 | Tcp, Udp, WebSocket, MqttClient |
-| **simpleble** | 0.12.1 | 跨平台 BLE 蓝牙库 | Ble |
 | **CSerialPort** | 4.3.3 | 跨平台串口通信库 | SerialPort |
 | **hidapi** | 0.15.0 | 跨平台 HID 设备库 | Hid |
 | **libusb-cmake** | 1.0.29-0 | USB 设备通信库（CMake 封装） | Usb |
@@ -119,7 +118,7 @@
           │           │         │         │        │       │
        Ble      SerialPort    Hid     Usb    Tcp/Udp/WS/Mqtt
           │           │         │         │        │
-      simpleble   CSerialPort  hidapi   libusb    libhv
+      Native BLE  CSerialPort  hidapi   libusb    libhv
                                                   (含 libuv)
 ```
 
@@ -391,53 +390,12 @@ ninja
 | **生成器** | 必须使用 Ninja（`-G "Ninja"`），MSBuild 会错误使用 VS 自带 NDK |
 | **Android API Level** | `android-24` 是最低推荐版本。`android-25` 会被自动降级为 `android-24` |
 | **pthread** | Android 上 pthread 已内置于 bionic libc，不能用 `-lpthread`，已自动处理 |
-| **libnativehelper** | NDK r23+ 已移除该库，JNI 符号桩已内置于 simpleble 的 Android 后端 |
 | **BLE 可执行文件** | BLE 示例在 Android 上需运行在 JVM 环境中（通过 `app_process` 等方式），无法直接执行 |
 | **MSVC 环境变量** | 如果同时安装了 Visual Studio，需清理 `ANDROID_HOME`、`ANDROID_SDK_ROOT`、`NDK_ROOT` 环境变量 |
 
-#### Android 适配修改说明
+#### Android BLE integration
 
-以下针对 NDK r23+ 的兼容性修改已内置于项目中：
-
-| 文件 | 修改内容 | 原因 |
-|------|----------|------|
-| `3rdparty/simpleble/simpleble/CMakeLists.txt:392` | 移除 `nativehelper` 链接 | NDK r23+ 已移除 `libnativehelper` 库 |
-| `3rdparty/simpleble/simpleble/CMakeLists.txt` | 新增 `JniStubs.cpp` 源文件 | 为 NDK r23+ 移除的 `JNI_GetCreatedJavaVMs` 提供符号桩，详见下方代码 |
-| `3rdparty/CSerialPort/lib/CMakeLists.txt:74` | `UNIX` → `UNIX AND NOT ANDROID` | Android 的 pthread 在 bionic libc 中，不存在独立的 `libpthread.so` |
-
-**`JniStubs.cpp`** — 位置：`3rdparty/simpleble/simpleble/src/backends/android/JniStubs.cpp`
-
-该文件为 NDK r23+ 移除的 JNI Invocation API 函数提供链接时符号桩。
-在真实 Android 设备上运行时，`libart.so`（Android 运行时）会先加载并提供真正实现，此桩函数不会被实际调用。
-
-```cpp
-/**
- * @file JniStubs.cpp
- * @brief Stubs for JNI Invocation API functions removed from NDK r23+.
- *
- * Prior to NDK r23, libnativehelper provided static stubs for JNI Invocation
- * API functions (JNI_GetCreatedJavaVMs, etc.). These were removed in NDK r23
- * because they are expected to be provided by the Android runtime (libart.so)
- * at load time.
- *
- * For static libraries linked into executables, the linker needs all symbols
- * resolved at link time. These stubs satisfy the linker; the real
- * implementations from libart.so take precedence at runtime.
- */
-
-#include <jni.h>
-
-extern "C" {
-
-jint JNI_GetCreatedJavaVMs(JavaVM** vmBuf, jsize bufLen, jsize* nVMs) {
-    (void)vmBuf;
-    (void)bufLen;
-    if (nVMs) *nVMs = 0;
-    return JNI_ERR;
-}
-
-} // extern "C"
-```
+The in-house Kotlin/JNI bridge requires host initialization and Kotlin packaging. See [BLE_ANDROID.md](BLE_ANDROID.md) for the AAR build and permission setup.
 
 ---
 

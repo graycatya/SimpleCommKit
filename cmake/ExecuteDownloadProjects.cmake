@@ -1,5 +1,4 @@
 set(PROJECT_NAMES "CSerialPort" 
-                    "simpleble"
                     "hidapi"
                     "libusb-cmake"
                     "libhv"
@@ -10,8 +9,6 @@ set(PROJECT_NAMES "CSerialPort"
 set(CSerialPort_VERSION_TAG "4.3.3")
 set(CSerialPort_URL "https://github.com/itas109/CSerialPort/archive/refs/tags/v${CSerialPort_VERSION_TAG}.zip")
 
-set(simpleble_VERSION_TAG "0.12.1")
-set(simpleble_URL "https://github.com/simpleble/simpleble/archive/refs/tags/v${simpleble_VERSION_TAG}.zip")
 
 set(hidapi_VERSION_TAG "hidapi-0.15.0")
 set(hidapi_URL "https://github.com/libusb/hidapi/archive/refs/tags/${hidapi_VERSION_TAG}.zip")

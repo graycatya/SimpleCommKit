@@ -19,7 +19,7 @@
 
 This warning means the `SimpleCommKitBle` C++ library failed to initialize. Common causes:
 - No Bluetooth adapter detected on the system
-- Missing platform BLE libraries (e.g., SimpleBLE dependencies)
+- Missing platform BLE libraries (e.g., Linux libdbus or platform SDK dependencies)
 - Permission issues on Linux (try running with sudo)
 
 ### Connection drops unexpectedly

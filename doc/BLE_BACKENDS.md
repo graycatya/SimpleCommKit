@@ -8,17 +8,15 @@ Im948ReadProbe.hpp 完成两轮 IM948 传感器会话，原参数恢复验证通
 实际 Write Request/Indicate 数据及故障/其它版本仍待验收；详见 [BLE_ANDROID.md](BLE_ANDROID.md)。
 以下各阶段记录保留其当时的范围，本节更新其中“Android 尚未实施”的历史状态。
 
-## 当前阶段
+## Current backend selection
 
-当前已实现公共私有后端契约、调度与假后端测试，以及 Linux BlueZ、Windows WinRT 和 macOS CoreBluetooth 实验路径。
-它不是全平台迁移完成的发布版本。默认仍使用原有 SimpleBLE；Windows、macOS 已提供扫描及连接/GATT 实验实现（见下文）；iOS、Android
-原生后端未实现，不允许通过原生开关静默回退。最终移除 SimpleBLE 的任务保持未完成。
+BLE uses only in-house Linux BlueZ D-Bus, Windows C++/WinRT, macOS CoreBluetooth and Android Kotlin/JNI backends. Enable `ENABLE_SIMPLECOMMKIT_BLE=ON`; no backend switch or SimpleBLE dependency is required. iOS remains unsupported and fails configuration explicitly. Platform validation limits below still apply.
 
 ## 构建与验证
 
 ```sh
 cmake -S . -B build/native-ble \
-  -DENABLE_SIMPLECOMMKIT_BLE=ON -DSIMPLECOMMKIT_BLE_NATIVE=ON \
+  -DENABLE_SIMPLECOMMKIT_BLE=ON \
   -DENABLE_SIMPLECOMMKIT_TCP=OFF -DENABLE_SIMPLECOMMKIT_UDP=OFF \
   -DENABLE_SIMPLECOMMKIT_WEBSOCKET=OFF -DSIMPLECOMMKIT_EXAMPLES=ON
 cmake --build build/native-ble
@@ -132,7 +130,7 @@ TX power 查询失败的 0 值打印成有效指标。新增 CTest 名称为 ble
 
 ## Windows 3.1 实施记录（2026-11-05）
 
-启用 `SIMPLECOMMKIT_BLE_NATIVE=ON` 时，Windows 使用 C++/WinRT 后端，不下载或链接 SimpleBLE、libdbus。
+启用 `ENABLE_SIMPLECOMMKIT_BLE=ON` 时，Windows 使用 C++/WinRT 后端，不下载或链接 SimpleBLE、libdbus。
 最低目标 Windows 10 2004（19041）；需 MSVC、Windows SDK 10.0.19041+ 的 C++/WinRT 头文件和 windowsapp.lib。
 验证环境：MSVC 19.39.33522、SDK 10.0.22621.0、CMake 3.27.7、Ninja、x64 Debug。
 
@@ -197,7 +195,7 @@ API 依据：[微软 GATT 客户端示例](https://github.com/microsoft/Windows-
 
 ## macOS CoreBluetooth 实施记录（2026-11-06）
 
-`SIMPLECOMMKIT_BLE_NATIVE=ON` 在 Darwin 上选择 Objective-C++ ARC 后端，仅链接系统
+`ENABLE_SIMPLECOMMKIT_BLE=ON` 在 Darwin 上选择 Objective-C++ ARC 后端，仅链接系统
 CoreBluetooth / Foundation；不下载或链接 SimpleBLE。iOS 和 Mac Catalyst 尚未接入。
 构建基线为 macOS 10.15+（Apple Silicon 为 11+）、C++17、CMake 3.21+、带对应 SDK 的 Xcode。
 本机证据：macOS 26.6.2 arm64、Xcode 26.6、Apple Clang 21.0.0、macOS SDK 26.5、CMake 4.3.0。
@@ -222,7 +220,7 @@ CoreBluetooth / Foundation；不下载或链接 SimpleBLE。iOS 和 Mac Catalyst
 
 ```sh
 cmake -S . -B build/native-macos \
-  -DENABLE_SIMPLECOMMKIT_BLE=ON -DSIMPLECOMMKIT_BLE_NATIVE=ON \
+  -DENABLE_SIMPLECOMMKIT_BLE=ON \
   -DENABLE_SIMPLECOMMKIT_TCP=OFF -DENABLE_SIMPLECOMMKIT_UDP=OFF \
   -DENABLE_SIMPLECOMMKIT_WEBSOCKET=OFF -DSIMPLECOMMKIT_EXAMPLES=ON \
   -DSIMPLECOMMKIT_BLE_TESTS=ON -DCMAKE_OSX_DEPLOYMENT_TARGET=11.0
