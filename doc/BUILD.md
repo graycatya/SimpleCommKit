@@ -345,7 +345,7 @@ cmake --install build_fat --config Release
 | `ENABLE_ARC` | `ON` | 自动引用计数 |
 | `ENABLE_SIMPLECOMMKIT_BLE` | `OFF` | BLE 蓝牙（需额外集成 CoreBluetooth） |
 
-> **注意**：iOS 上可用的模块为 TCP、UDP、WebSocket、MQTT。BLE 需要额外集成 iOS 原生 CoreBluetooth 框架，其他模块（串口/HID/USB/Python绑定/AI Fastmcpp）在 iOS 平台不可用。
+> **注意**：iOS 上可用的模块为 TCP、UDP、WebSocket、MQTT。BLE 已接入 iOS 原生 CoreBluetooth，构建和真机测试步骤见 [BLE_IOS.md](BLE_IOS.md)，其他模块（串口/HID/USB/Python绑定/AI Fastmcpp）在 iOS 平台不可用。
 
 ### Android
 

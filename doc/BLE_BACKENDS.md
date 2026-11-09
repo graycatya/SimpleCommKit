@@ -1,5 +1,11 @@
 # BLE 原生后端实施与能力矩阵
 
+## iOS 更新（2026-11-09）
+
+iOS 15+ 已复用 Apple CoreBluetooth 后端，并提供 UIKit 测试 App、签名构建入口和前台生命周期清理。
+iPhone XR / iOS 18.7.9 两轮 IM948 公共接口测试通过，48 个完整传感器包及两次原参数恢复已核对。
+构建、权限、前后台和剩余验收范围见 [BLE_IOS.md](BLE_IOS.md)。以下日期记录保留历史状态，以本节和平台文档为准。
+
 ## Android 更新（2026-11-07）
 
 已新增 Kotlin/JNI 原生实验后端：扫描、BluetoothGatt 连接/服务发现、特征/描述符读写、
@@ -10,7 +16,7 @@ Im948ReadProbe.hpp 完成两轮 IM948 传感器会话，原参数恢复验证通
 
 ## Current backend selection
 
-BLE uses only in-house Linux BlueZ D-Bus, Windows C++/WinRT, macOS CoreBluetooth and Android Kotlin/JNI backends. Enable `ENABLE_SIMPLECOMMKIT_BLE=ON`; no backend switch or SimpleBLE dependency is required. iOS remains unsupported and fails configuration explicitly. Platform validation limits below still apply.
+BLE uses only in-house Linux BlueZ D-Bus, Windows C++/WinRT, macOS/iOS CoreBluetooth and Android Kotlin/JNI backends. Enable `ENABLE_SIMPLECOMMKIT_BLE=ON`; no backend switch or SimpleBLE dependency is required. iOS 15+ integration and iPhone XR validation are documented in [BLE_IOS.md](BLE_IOS.md). Platform validation limits below still apply.
 
 ## 构建与验证
 
@@ -40,8 +46,8 @@ Python 扩展使用 `-DENABLE_SIMPLECOMMKITPYBIND=ON -DCMAKE_POSITION_INDEPENDEN
 | Linux | C++17、CMake 3.21；libdbus >= 1.12；BlueZ 5.x 的 Adapter1/Device1/GATT API | GNU 15.2、CMake 4.2.3、libdbus 1.16.2 下静态/动态库、示例、Python 扩展编译；独立 D-Bus 模拟服务通过 | 未验证；最低 BlueZ 实机版本尚未固定 |
 | Windows | Windows 10 2004 / SDK 19041+，MSVC C++17 | 扫描/连接/GATT 已实现，x64 静态库和示例构建通过 | UAF028 连接、发现、读取、订阅/退订、重连通过；写入/通知载荷/故障场景待验 |
 | macOS | macOS 10.15+（arm64 11+），C++17 / Objective-C++ ARC；CoreBluetooth、Foundation | Apple Clang 21 / SDK 26.5，arm64 静态/动态库、C++ 示例与 Python 3.12 扩展通过；模拟 delegate 会话通过 | 原 C++ 示例完成 IM948-V3.05 两次连接会话、状态读取、Notify / Write Command、23 个传感器数据包及参数恢复；故障场景待验 |
-| iOS | 待固定 SDK、部署版本及 OBJCXX 工具链 | 原生未接入 | 未验证 |
-| Android | 待固定 API/NDK、Java 打包及 Context 初始化入口 | 原生未实现 | 未验证 |
+| iOS | iOS 15+、C++17 / Objective-C++ ARC；系统 CoreBluetooth / Foundation | 真机 arm64 静态/动态库、签名 App；模拟器 arm64 App / x86_64 库编译通过 | iPhone XR / iOS 18.7.9 两轮 IM948、48 个传感器包、原参数恢复通过；故障与载荷验收边界见 BLE_IOS.md |
+| Android | API 23+、NDK 25.1、Kotlin 2.3.10；宿主初始化及权限入口见 BLE_ANDROID.md | 两个 ABI 动态库、Kotlin AAR 和测试 APK 已接入 | Android 12 两轮 IM948 统一测试通过；其余版本/故障/生产交付待验 |
 
 ## 公共契约
 

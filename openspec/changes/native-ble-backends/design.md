@@ -92,3 +92,12 @@ Darwin 原生路径现已接入 CoreBluetooth，iOS / Android 仍配置失败。
 CoreBluetooth 不能区分读响应与通知：正在订阅的特征拒绝同步读取；同时支持 Notify / Indicate 的
 特征拒绝模式指定。CCCD 不允许直接写，精确 ATT MTU、配对和全系统无过滤连接列表明确不支持。
 服务变化报告 GattError 并撤销会话，调用方重新连接和订阅。macOS 实际证据与权限阻碍见能力文档。
+
+
+## iOS 实施决策（2026-11-09）
+
+iOS 15+ 复用 Apple 后端，真机和模拟器通过 CMake 原生 iOS 平台选择 SDK；macOS 最低版本规则单独保留。
+测试 App 使用 UIKit 和静态库，工作队列调用同步公共 API，delegate 与 UIKit 主线程不被同步操作阻塞。
+复用统一 IM948 测试，停止/进入后台时完成当前有界会话的参数恢复，再跳过剩余轮次；后台清理时间耗尽明确报告风险并取消连接。
+不声明持续后台采集或状态恢复。首次权限由系统和用户处理；iPhone 的平台 UUID 与 Mac 不同。
+实际构建、签名安装、模拟器与 iPhone XR 两轮会话证据及剩余验收见 doc/BLE_IOS.md。

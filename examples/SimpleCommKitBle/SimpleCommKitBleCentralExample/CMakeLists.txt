@@ -1,3 +1,8 @@
+if(CMAKE_SYSTEM_NAME STREQUAL "iOS")
+    add_subdirectory(../SimpleCommKitBleIosExample "${CMAKE_CURRENT_BINARY_DIR}/ios")
+    return()
+endif()
+
 cmake_minimum_required(VERSION 3.21)
 
 

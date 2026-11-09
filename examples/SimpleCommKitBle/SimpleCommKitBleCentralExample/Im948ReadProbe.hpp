@@ -135,7 +135,8 @@ inline bool readIm948(SimpleCommKit::SimpleCommKitBleCentral& central,
 
 // Unified public-API probe. No undocumented AE10 writes or indication triggers.
 inline bool testIm948(SimpleCommKit::SimpleCommKitBleCentral& central,
-                     std::vector<SimpleCommKit::SimpleCommKitBleService> services) {
+                     std::vector<SimpleCommKit::SimpleCommKitBleService> services,
+                     std::function<bool()> shouldStop = {}) {
     const std::string service = "0000ae30-0000-1000-8000-00805f9b34fb";
     const std::string read = "0000ae10-0000-1000-8000-00805f9b34fb";
     const std::string indicate = "0000ae05-0000-1000-8000-00805f9b34fb";
@@ -146,6 +147,10 @@ inline bool testIm948(SimpleCommKit::SimpleCommKitBleCentral& central,
     };
     bool passed = true;
     for (int cycle = 1; passed && cycle <= 2; ++cycle) {
+        if (shouldStop && shouldStop()) {
+            consoleOut() << "[IM948 TEST CANCELLED] Current session cleaned up; remaining cycles skipped" << std::endl;
+            passed = false; break;
+        }
         central.set_Callback_Error(reportError);
         error->store(0);
         consoleOut() << "[IM948 TEST] Cycle " << cycle << "/2" << std::endl;
